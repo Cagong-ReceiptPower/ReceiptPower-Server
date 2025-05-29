@@ -14,7 +14,7 @@ public class Menu {
 
     private int price;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cafe_id")
     private Cafe cafe;
 }

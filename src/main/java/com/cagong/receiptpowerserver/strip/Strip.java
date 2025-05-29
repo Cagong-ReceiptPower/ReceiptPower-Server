@@ -16,7 +16,7 @@ public class Strip {
 
     private int time;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cafe_id")
     private Cafe cafe;
 
