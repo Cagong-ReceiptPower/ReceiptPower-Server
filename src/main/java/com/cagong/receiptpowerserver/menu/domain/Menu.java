@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.menu;
+package com.cagong.receiptpowerserver.menu.domain;
 
 import com.cagong.receiptpowerserver.cafe.Cafe;
 import jakarta.persistence.*;
