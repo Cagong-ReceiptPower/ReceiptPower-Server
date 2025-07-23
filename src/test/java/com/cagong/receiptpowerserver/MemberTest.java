@@ -28,6 +28,7 @@ public class MemberTest {
                 .local("서울시 마포구")
                 .build();
         Member saved = memberRepository.save(member);
+        System.out.println("test");
 
         Optional<Member> found = memberRepository.findById(saved.getId());
         Assertions.assertThat(found.get().getNickname()).isEqualTo("테스터");
