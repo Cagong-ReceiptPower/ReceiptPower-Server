@@ -1,6 +1,6 @@
-package com.cagong.receiptpowerserver.menu.domain;
+package com.cagong.receiptpowerserver.domain.menu.domain;
 
-import com.cagong.receiptpowerserver.cafe.Cafe;
+import com.cagong.receiptpowerserver.domain.cafe.Cafe;
 import jakarta.persistence.*;
 
 @Entity

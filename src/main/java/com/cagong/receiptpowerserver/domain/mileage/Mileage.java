@@ -1,8 +1,7 @@
-package com.cagong.receiptpowerserver.mileage;
+package com.cagong.receiptpowerserver.domain.mileage;
 
-import com.cagong.receiptpowerserver.cafe.Cafe;
-import com.cagong.receiptpowerserver.common.BaseEntity;
-import com.cagong.receiptpowerserver.member.Member;
+import com.cagong.receiptpowerserver.domain.cafe.Cafe;
+import com.cagong.receiptpowerserver.domain.member.Member;
 import jakarta.persistence.*;
 
 @Entity

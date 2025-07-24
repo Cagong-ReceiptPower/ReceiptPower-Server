@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.member;
+package com.cagong.receiptpowerserver.domain.member;
 
 import jakarta.persistence.*;
 import lombok.*;

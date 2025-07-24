@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.common;
+package com.cagong.receiptpowerserver.domain.common;
 
 import jakarta.persistence.Column;
 import lombok.Getter;

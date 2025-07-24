@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.member;
+package com.cagong.receiptpowerserver.domain.member;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

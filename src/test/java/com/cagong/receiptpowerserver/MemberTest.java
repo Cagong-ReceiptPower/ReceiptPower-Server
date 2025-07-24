@@ -1,7 +1,7 @@
 package com.cagong.receiptpowerserver;
 
-import com.cagong.receiptpowerserver.member.Member;
-import com.cagong.receiptpowerserver.member.MemberRepository;
+import com.cagong.receiptpowerserver.domain.member.Member;
+import com.cagong.receiptpowerserver.domain.member.MemberRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.cafe;
+package com.cagong.receiptpowerserver.domain.cafe;
 
 import jakarta.persistence.*;
 

@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.mileage;
+package com.cagong.receiptpowerserver.domain.mileage;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

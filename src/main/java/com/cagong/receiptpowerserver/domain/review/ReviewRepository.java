@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.review;
+package com.cagong.receiptpowerserver.domain.review;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.strip;
+package com.cagong.receiptpowerserver.domain.strip;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
