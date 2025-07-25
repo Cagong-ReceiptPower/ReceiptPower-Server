@@ -32,6 +32,14 @@ dependencies {
 	implementation 'org.xerial:sqlite-jdbc:3.41.2.1'
 	implementation 'org.hibernate.orm:hibernate-community-dialects'
 
+	// JWT 라이브러리 추가
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5' // Jackson 기반 JSON 직렬화 지원
+
+	//security 추가
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	runtimeOnly 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
