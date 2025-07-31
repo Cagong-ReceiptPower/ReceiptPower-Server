@@ -12,19 +12,19 @@ public class Member {
     @Column(name = "member_id")
     private Long id;
 
-    private String nickname;
+    @Column(nullable = false, unique = true, length = 50)
+    private String email;
 
-    private String loginId;
+    @Column(nullable = false, unique = true, length = 20)
+    private String username;
 
+    @Column(nullable = false)
     private String password;
 
-    private String local;
-
     @Builder
-    public  Member(String nickname, String loginId, String password, String local){
-        this.nickname = nickname;
-        this.loginId = loginId;
+    public  Member(String username, String email, String password){
+        this.username = username;
+        this.email = email;
         this.password = password;
-        this.local = local;
     }
 }
