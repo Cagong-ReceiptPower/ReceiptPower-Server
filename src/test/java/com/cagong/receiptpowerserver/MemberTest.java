@@ -22,14 +22,13 @@ public class MemberTest {
     @Test
     void testSomething() {
         Member member = Member.builder()
-                .nickname("테스터")
-                .loginId("id123")
+                .username("테스터")
+                .email("test@gmail.com")
                 .password("password123")
-                .local("서울시 마포구")
                 .build();
         Member saved = memberRepository.save(member);
 
         Optional<Member> found = memberRepository.findById(saved.getId());
-        Assertions.assertThat(found.get().getNickname()).isEqualTo("테스터");
+        Assertions.assertThat(found.get().getUsername()).isEqualTo("테스터");
     }
 }

@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver.member.dto;
+package com.cagong.receiptpowerserver.domain.member.dto;
 
 import lombok.Getter;
 import lombok.Setter;
