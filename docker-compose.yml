@@ -1,6 +1,6 @@
 services:
   app:
-    image: yuyeonho/receiptpower-test:test  # GitHub Packages 이미지
+    image: yuyeonho/receiptpower-server:cagong  # GitHub Packages 이미지
     container_name: receiptpower-service
     ports:
       - "80:8080"
