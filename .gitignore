@@ -38,3 +38,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+mydb.db
+.env
+github-actions-key
+github-actions-key.pub
