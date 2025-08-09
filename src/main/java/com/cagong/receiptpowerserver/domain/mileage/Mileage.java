@@ -3,7 +3,11 @@ package com.cagong.receiptpowerserver.domain.mileage;
 import com.cagong.receiptpowerserver.domain.cafe.Cafe;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Entity
 public class Mileage {
     @Id
@@ -20,4 +24,5 @@ public class Mileage {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cafe_id")
     private Cafe cafe;
+
 }
