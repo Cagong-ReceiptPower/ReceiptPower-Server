@@ -58,7 +58,7 @@ jobs:
           script: |
             set -e
             echo "Logging in to Docker..."
-            echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            echo "${{ secrets.DOCKERHUB_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             cd /home/ubuntu
             echo "Pulling image..."
             sudo docker pull ${{ secrets.DOCKER_IMAGE_TAG }}
