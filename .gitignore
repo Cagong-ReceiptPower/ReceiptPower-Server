@@ -38,3 +38,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+mydb.db
+
+db.sqlite3
