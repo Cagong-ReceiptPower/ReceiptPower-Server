@@ -1,8 +1,10 @@
 package com.cagong.receiptpowerserver.domain.cafe;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
+@Getter
 public class Cafe {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
