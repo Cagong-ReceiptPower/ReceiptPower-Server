@@ -33,14 +33,14 @@ public class MileageController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/usage")
-    public ResponseEntity<Void> useMileage(@RequestParam Long cafeId){
+    @PostMapping("/{cafeId}/usage")
+    public ResponseEntity<Void> useMileage(@PathVariable Long cafeId){
         mileageService.startMileageUsage(cafeId);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("usage/end")
-    public ResponseEntity<EndMileageUsageResponse> endMileage(@RequestParam Long cafeId){
+    @PostMapping("/{cafeId}/usage/end")
+    public ResponseEntity<EndMileageUsageResponse> endMileage(@PathVariable Long cafeId){
         EndMileageUsageResponse response = mileageService.endMileageUsage(cafeId);
         return ResponseEntity.ok().body(response);
     }
