@@ -14,6 +14,7 @@ spring:
   h2:
     console:
       enabled: true
+<<<<<<< HEAD
       path: /h2-console
   security:
     oauth2:
@@ -31,3 +32,6 @@ spring:
 
 jwt:
   secret: ThisIsA_VeryLongAndSecureSecretKeyForJwtTEST_YouShouldChange
+=======
+      path: /h2-console
+>>>>>>> e3a1992 (로그인/회원 가입api + jwt이용한 api 보안)
