@@ -8,7 +8,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -21,7 +20,7 @@ public class Mileage extends BaseEntity {
     @Column(name = "mileage_id")
     private Long id;
 
-    private int points;
+    private int point;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
@@ -34,8 +33,8 @@ public class Mileage extends BaseEntity {
     private LocalDateTime usageStartTime;
 
     @Builder
-    private Mileage(int points, Member member, Cafe cafe){
-        this.points = points;
+    private Mileage(int point, Member member, Cafe cafe){
+        this.point = point;
         this.member = member;
         this.cafe = cafe;
     }
@@ -44,7 +43,7 @@ public class Mileage extends BaseEntity {
         if (pointsToAdd < 0) {
             throw new IllegalArgumentException("추가할 포인트는 0보다 커야 합니다.");
         }
-        this.points += pointsToAdd;
+        this.point += pointsToAdd;
     }
 
     public void startUsage() {
@@ -62,13 +61,13 @@ public class Mileage extends BaseEntity {
         long minutes = Duration.between(this.usageStartTime, LocalDateTime.now()).toMinutes();
         int pointsToUse = (int)Math.ceil(minutes/10.0);
 
-        if (this.points < pointsToUse) {
+        if (this.point < pointsToUse) {
             throw new IllegalStateException("포인트가 부족합니다.");
         }
 
-        this.points -= pointsToUse;
+        this.point -= pointsToUse;
         this.usageStartTime = null;
 
-        return points;
+        return point;
     }
 }

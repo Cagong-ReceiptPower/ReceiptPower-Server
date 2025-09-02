@@ -3,7 +3,9 @@ package com.cagong.receiptpowerserver.domain.mileage;
 import com.cagong.receiptpowerserver.domain.cafe.Cafe;
 import com.cagong.receiptpowerserver.domain.cafe.CafeRepository;
 import com.cagong.receiptpowerserver.domain.member.Member;
+import com.cagong.receiptpowerserver.domain.member.MemberRepository;
 import com.cagong.receiptpowerserver.domain.mileage.dto.*;
+import com.cagong.receiptpowerserver.global.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +20,12 @@ public class MileageService {
 
     private final MileageRepository mileageRepository;
     private final CafeRepository cafeRepository;
+    private final MemberRepository memberRepository;
 
     public TotalMileageResponse getTotalMileage(){
-        Member member = null;      // Security 적용하고 로그인된 멤버 찾기 필요
-        Long memberId = member.getId();
+        Long memberId = MemberUtil.getCurrentMember();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         int totalMileage = mileageRepository.getTotalMileageByMember(memberId);
 
@@ -31,8 +35,9 @@ public class MileageService {
     }
 
     public CafeMileageResponse getCafeMileage(Long cafeId){
-        Member member = null;      // Security 적용하고 로그인된 멤버 찾기 필요
-        Long memberId = member.getId();
+        Long memberId = MemberUtil.getCurrentMember();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(cafeId)
                 .orElseThrow(() -> new IllegalArgumentException());
@@ -40,14 +45,16 @@ public class MileageService {
         Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
                 .orElseThrow(() -> new IllegalArgumentException());
 
-        CafeMileageResponse response = new CafeMileageResponse(cafeId, cafe.getName(), mileage.getPoints(), mileage.getUpdatedAt());
+        CafeMileageResponse response = new CafeMileageResponse(cafeId, cafe.getName(), mileage.getPoint(), mileage.getUpdatedAt());
         return response;
     }
 
     @Transactional
     public void addMileage(SaveMileageRequest request){
-        Member member = null;      // Security 적용하고 로그인된 멤버 찾기 필요
-        Long memberId = member.getId();
+        Long memberId = MemberUtil.getCurrentMember();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
+
         Cafe cafe = cafeRepository.findById(request.getCafeId())
                 .orElseThrow(() -> new IllegalArgumentException());
 
@@ -60,7 +67,7 @@ public class MileageService {
                 })
                 .orElseGet(() ->{
                     Mileage toSave = Mileage.builder()
-                            .points(pointsToAdd)
+                            .point(pointsToAdd)
                             .member(member)
                             .cafe(cafe)
                             .build();
@@ -70,7 +77,9 @@ public class MileageService {
 
     @Transactional
     public void startMileageUsage(Long cafeId){
-        Member member = null;
+        Long memberId = MemberUtil.getCurrentMember();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(cafeId)
                 .orElseThrow(() -> new IllegalArgumentException());
@@ -83,7 +92,9 @@ public class MileageService {
 
     @Transactional
     public EndMileageUsageResponse endMileageUsage(Long cafeId){
-        Member member = null;
+        Long memberId = MemberUtil.getCurrentMember();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(cafeId)
                 .orElseThrow(() -> new IllegalArgumentException());
