@@ -17,8 +17,8 @@ public interface MileageRepository extends JpaRepository<Mileage, Long> {
     @Query("SELECT m FROM Mileage m JOIN FETCH m.member JOIN FETCH m.cafe WHERE m.member.id = :memberId")
     List<Mileage> findByMemberIdWithFetch(@Param("memberId") Long memberId);
 
-    @Query("select sum(m.point) from Mileage m where m.member.id = :memberId")
-    Integer getTotalMileageByMember(@Param("memberId") Long memberId);
+    @Query("select coalesce(sum(m.point),0) from Mileage m where m.member.id = :memberId")
+    int getTotalMileageByMember(@Param("memberId") Long memberId);
 
     @Query("select new com.cagong.receiptpowerserver.domain.mileage.dto.CafeMileageDto(m.cafe.id, m.cafe.name, sum(m.point)) " +
             "from Mileage m " +

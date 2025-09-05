@@ -1,36 +1,142 @@
-package com.cagong.receiptpowerserver;
+package com.cagong.receiptpowerserver.mileage;
 
 import com.cagong.receiptpowerserver.domain.cafe.Cafe;
 import com.cagong.receiptpowerserver.domain.cafe.CafeRepository;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import com.cagong.receiptpowerserver.domain.member.MemberRepository;
+import com.cagong.receiptpowerserver.domain.member.MemberService;
+import com.cagong.receiptpowerserver.domain.member.dto.MemberLoginRequest;
+import com.cagong.receiptpowerserver.domain.member.dto.MemberLoginResponse;
 import com.cagong.receiptpowerserver.domain.mileage.Mileage;
 import com.cagong.receiptpowerserver.domain.mileage.MileageRepository;
+import com.cagong.receiptpowerserver.domain.mileage.MileageService;
+import com.cagong.receiptpowerserver.domain.mileage.dto.CafeMileageResponse;
+import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageRequest;
+import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.apache.http.HttpStatus;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-@SpringBootTest
+import static io.restassured.RestAssured.given;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Transactional
+//@Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class MileageTest {
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     @Autowired
     private MileageRepository mileageRepository;
-    
+    @Autowired
+    private MileageService mileageService;
     @Autowired
     private MemberRepository memberRepository;
-    
+    @Autowired
+    private MemberService memberService;
+
     @Autowired
     private CafeRepository cafeRepository;
+    @Autowired
+    protected ObjectMapper mapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @LocalServerPort
+    int port;
+
+
+    private String authorizationValue;
+    private String accessToken;
+
+
+    //TODO: setup메서드, 디비 초기화 테스트 패키지 전체화 하기
+    @BeforeEach
+    void setup() {
+        //테스트db 초기화
+        memberRepository.deleteAll();
+
+        //멤버 저장
+        Member member = Member.builder()
+                .username("테스터1")
+                .email("mileage123@test.com")
+                .password(passwordEncoder.encode("password123"))
+                .build();
+        memberRepository.save(member);
+
+        Cafe cafe = Cafe.builder()
+                .name("testCafe")
+                .address("testAddress")
+                .phoneNumber("12341234")
+                .build();
+        cafeRepository.save(cafe);
+
+        Mileage mileage = Mileage.builder()
+                .point(5)
+                .member(member)
+                .cafe(cafe)
+                .build();
+        mileageRepository.save(mileage);
+
+        //토큰 발급
+        MemberLoginRequest request = new MemberLoginRequest(
+                "mileage123@test.com",
+                "password123"
+        );
+
+        accessToken =
+                given()
+                    .port(port)
+                    .contentType(ContentType.JSON)
+                    .body(request)
+                .when()
+                    .post("/members/login")
+                .then()
+                    .statusCode(200)
+                    .extract()
+                    .jsonPath()
+                    .getString("accessToken");
+
+        authorizationValue = "Bearer " + accessToken;
+
+        System.out.println("배리어: " + authorizationValue);
+
+        // SecurityContext에 세팅
+        UserDetails userDetails = new CustomUserDetails(member);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities()
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
 
     // 공통 테스트 데이터 생성 메서드
     private Member createTestMember(String username, String email) {
@@ -59,21 +165,30 @@ public class MileageTest {
         Cafe savedCafe = createTestCafe("스타벅스 강남점", "서울시 강남구 역삼동", "02-1234-5678");
 
         // When - 마일리지 저장
+        /*
         Mileage mileage = Mileage.builder()
                 .point(1000)
                 .member(savedMember)
                 .cafe(savedCafe)
                 .build();
         Mileage savedMileage = mileageRepository.save(mileage);
+        */
+        SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(),100);
+        mileageService.addMileage(request);
 
         // Then - 검증
-        Optional<Mileage> found = mileageRepository.findById(savedMileage.getId());
+        //Optional<Mileage> found = mileageRepository.findById(savedMileage.getId());
+        CafeMileageResponse response = mileageService.getCafeMileage(savedCafe.getId());
+
+        Assertions.assertThat(response.getPoints()).isEqualTo(10);
+/*
         Assertions.assertThat(found).isPresent();
         Assertions.assertThat(found.get().getPoint()).isEqualTo(1000);
         
         // 연관관계 검증을 위한 페치 조인 사용 또는 트랜잭션 내에서 접근
         Assertions.assertThat(found.get().getMember().getUsername()).isEqualTo("마일리지테스터");
         Assertions.assertThat(found.get().getCafe().getName()).isEqualTo("스타벅스 강남점");
+        */
     }
 
     @Test
@@ -181,5 +296,23 @@ public class MileageTest {
         Mileage savedNegative = mileageRepository.save(negativePointMileage);
         Assertions.assertThat(savedNegative.getPoint()).isEqualTo(-500);
     }
+
+
+    @Test
+    void 내_총_마일리지_조회_성공(){
+
+        RestAssured.given().
+                    port(port).
+                    header(AUTHORIZATION, authorizationValue).
+                when().
+                    get("/mileages/total").
+                then().
+                    statusCode(HttpStatus.SC_OK);
+    }
+
+    void 마일리지_적립_성공(){
+
+    }
+
 
 }
