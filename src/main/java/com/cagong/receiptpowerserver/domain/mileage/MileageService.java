@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,25 +39,25 @@ public class MileageService {
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(cafeId)
-                .orElseThrow(() -> new IllegalArgumentException());
+                .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
         Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
-                .orElseThrow(() -> new IllegalArgumentException());
+                .orElseThrow(() -> new RuntimeException());
 
         CafeMileageResponse response = new CafeMileageResponse(cafeId, cafe.getName(), mileage.getPoint(), mileage.getUpdatedAt());
         return response;
     }
 
     @Transactional
-    public void addMileage(SaveMileageRequest request){
+    public SaveMileageResponse addMileage(SaveMileageRequest request){
         Long memberId = MemberUtil.getCurrentMember();
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(request.getCafeId())
-                .orElseThrow(() -> new IllegalArgumentException());
+                .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
-        int pointsToAdd = (int) Math.ceil(request.getRemainingTime()/10.0);
+        int pointsToAdd = request.getRemainingTime();
 
         Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
                 .map(m -> {
@@ -73,6 +72,7 @@ public class MileageService {
                             .build();
                     return mileageRepository.save(toSave);
                 });
+        return new SaveMileageResponse(mileage.getId(),mileage.getPoint());
     }
 
     @Transactional
@@ -82,12 +82,16 @@ public class MileageService {
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(cafeId)
-                .orElseThrow(() -> new IllegalArgumentException());
+                .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
         Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
                 .orElseThrow(() -> new RuntimeException());
 
-        mileage.startUsage();
+        try {
+            mileage.startUsage();
+        } catch (IllegalStateException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 
     @Transactional
@@ -97,7 +101,7 @@ public class MileageService {
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(cafeId)
-                .orElseThrow(() -> new IllegalArgumentException());
+                .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
         Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
                 .orElseThrow(() -> new RuntimeException());

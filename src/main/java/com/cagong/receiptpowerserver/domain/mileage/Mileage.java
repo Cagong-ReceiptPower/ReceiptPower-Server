@@ -47,6 +47,9 @@ public class Mileage extends BaseEntity {
     }
 
     public void startUsage() {
+        if (this.point <= 0) {
+            throw new IllegalStateException("마일리지가 부족하여 사용할 수 없습니다.");
+        }
         if (this.usageStartTime != null) {
             throw new IllegalStateException("이미 사용 중입니다.");
         }
@@ -59,10 +62,10 @@ public class Mileage extends BaseEntity {
         }
 
         long minutes = Duration.between(this.usageStartTime, LocalDateTime.now()).toMinutes();
-        int pointsToUse = (int)Math.ceil(minutes/10.0);
+        int pointsToUse = (int)minutes;
 
         if (this.point < pointsToUse) {
-            throw new IllegalStateException("포인트가 부족합니다.");
+            throw new IllegalStateException("마일리지가 부족합니다.");
         }
 
         this.point -= pointsToUse;

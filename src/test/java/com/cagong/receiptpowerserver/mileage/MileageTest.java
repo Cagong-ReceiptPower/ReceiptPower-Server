@@ -11,9 +11,10 @@ import com.cagong.receiptpowerserver.domain.mileage.Mileage;
 import com.cagong.receiptpowerserver.domain.mileage.MileageRepository;
 import com.cagong.receiptpowerserver.domain.mileage.MileageService;
 import com.cagong.receiptpowerserver.domain.mileage.dto.CafeMileageResponse;
+import com.cagong.receiptpowerserver.domain.mileage.dto.EndMileageUsageResponse;
 import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageRequest;
+import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageResponse;
 import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -33,18 +34,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.*;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -82,8 +79,12 @@ public class MileageTest {
     //TODO: setup메서드, 디비 초기화 테스트 패키지 전체화 하기
     @BeforeEach
     void setup() {
+        RestAssured.port = port;
+
         //테스트db 초기화
         memberRepository.deleteAll();
+        cafeRepository.deleteAll();
+        mileageRepository.deleteAll();
 
         //멤버 저장
         Member member = Member.builder()
@@ -92,6 +93,7 @@ public class MileageTest {
                 .password(passwordEncoder.encode("password123"))
                 .build();
         memberRepository.save(member);
+/*
 
         Cafe cafe = Cafe.builder()
                 .name("testCafe")
@@ -107,6 +109,7 @@ public class MileageTest {
                 .build();
         mileageRepository.save(mileage);
 
+*/
         //토큰 발급
         MemberLoginRequest request = new MemberLoginRequest(
                 "mileage123@test.com",
@@ -115,7 +118,6 @@ public class MileageTest {
 
         accessToken =
                 given()
-                    .port(port)
                     .contentType(ContentType.JSON)
                     .body(request)
                 .when()
@@ -180,8 +182,8 @@ public class MileageTest {
         //Optional<Mileage> found = mileageRepository.findById(savedMileage.getId());
         CafeMileageResponse response = mileageService.getCafeMileage(savedCafe.getId());
 
-        Assertions.assertThat(response.getPoints()).isEqualTo(10);
-/*
+        Assertions.assertThat(response.getPoints()).isEqualTo(100);
+        /*
         Assertions.assertThat(found).isPresent();
         Assertions.assertThat(found.get().getPoint()).isEqualTo(1000);
         
@@ -299,20 +301,145 @@ public class MileageTest {
 
 
     @Test
-    void 내_총_마일리지_조회_성공(){
+    void 마일리지_적립_및_총_마일리지_조회_성공(){
+        Cafe cafe = Cafe.builder()
+                .name("testCafe")
+                .address("testAddress")
+                .phoneNumber("12341234")
+                .build();
+        cafeRepository.save(cafe);
 
-        RestAssured.given().
-                    port(port).
-                    header(AUTHORIZATION, authorizationValue).
+        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 100);
+
+        given().
+                header(AUTHORIZATION, authorizationValue).
+                contentType(ContentType.JSON).
+                body(request).
+        when().
+                post("/mileages").
+        then().
+                statusCode(SC_OK);
+
+        given().
+                header(AUTHORIZATION, authorizationValue).
+        when().
+                get("/mileages/total").
+        then().
+                statusCode(HttpStatus.SC_OK);
+    }
+
+    @Test
+    void 카페별_마일리지_조회_성공(){
+        Cafe cafe = Cafe.builder()
+                .name("testCafe")
+                .address("testAddress")
+                .phoneNumber("12341234")
+                .build();
+        cafeRepository.save(cafe);
+
+        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 100);
+
+        given().
+                header(AUTHORIZATION, authorizationValue).
+                contentType(ContentType.JSON).
+                body(request).
+        when().
+                post("/mileages").
+        then().
+                statusCode(SC_OK);
+
+        CafeMileageResponse response =
+        given()
+                .header(AUTHORIZATION, authorizationValue)
+                .queryParam("cafeId", cafe.getId()).
+        when()
+                .get("/mileages").
+        then()
+                .statusCode(HttpStatus.SC_OK)
+                .extract()
+                .as(CafeMileageResponse.class);
+
+        assertThat(response.getCafeId()).isEqualTo(cafe.getId());
+        assertThat(response.getPoints()).isEqualTo(100);
+    }
+
+    @Test
+    void 마일리지_사용_및_종료_성공(){
+        Cafe cafe = Cafe.builder()
+                .name("testCafe")
+                .address("testAddress")
+                .phoneNumber("12341234")
+                .build();
+        cafeRepository.save(cafe);
+
+        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 1000);
+
+        given().
+                header(AUTHORIZATION, authorizationValue).
+                contentType(ContentType.JSON).
+                body(request).
                 when().
-                    get("/mileages/total").
+                post("/mileages").
                 then().
-                    statusCode(HttpStatus.SC_OK);
+                statusCode(SC_OK);
+
+        //마일리지 사용
+        given()
+                .header(AUTHORIZATION, authorizationValue)
+                .accept(ContentType.JSON)
+                .when()
+                .post("/mileages/{cafeId}/usage", cafe.getId())
+                .then()
+                .statusCode(SC_OK);
+
+        //마일리지 종료
+        EndMileageUsageResponse endResponse =
+                given()
+                        .header(AUTHORIZATION, authorizationValue)
+                        .accept(ContentType.JSON)
+                        .when()
+                        .post("/mileages/{cafeId}/usage/end", cafe.getId())
+                        .then()
+                        .statusCode(SC_OK)
+                        .extract()
+                        .as(EndMileageUsageResponse.class);
+
+        assertThat(endResponse.getRemainingMileage()).isGreaterThan(0);
     }
 
-    void 마일리지_적립_성공(){
+    @Test
+    void 마일리지가_없으면_사용_실패(){
+        Cafe cafe = Cafe.builder()
+                .name("testCafe")
+                .address("testAddress")
+                .phoneNumber("12341234")
+                .build();
+        cafeRepository.save(cafe);
 
+        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 0);
+
+        given().
+                header(AUTHORIZATION, authorizationValue).
+                contentType(ContentType.JSON).
+                body(request).
+                when().
+                post("/mileages").
+                then().
+                statusCode(SC_OK);
+
+        //마일리지 사용
+        //String errorMessage =
+        given()
+                .header(AUTHORIZATION, authorizationValue)
+                .accept(ContentType.JSON)
+                .when()
+                .post("/mileages/{cafeId}/usage", cafe.getId())
+                .then()
+                .statusCode(HttpStatus.SC_BAD_REQUEST);
+//                .extract()
+//                .jsonPath()
+//                .get("message");
+
+        //assertThat(errorMessage).isEqualTo("마일리지가 부족하여 사용할 수 없습니다.");
     }
-
-
 }

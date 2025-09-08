@@ -1,9 +1,6 @@
 package com.cagong.receiptpowerserver.domain.mileage;
 
-import com.cagong.receiptpowerserver.domain.mileage.dto.CafeMileageResponse;
-import com.cagong.receiptpowerserver.domain.mileage.dto.EndMileageUsageResponse;
-import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageRequest;
-import com.cagong.receiptpowerserver.domain.mileage.dto.TotalMileageResponse;
+import com.cagong.receiptpowerserver.domain.mileage.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,31 +14,51 @@ public class MileageController {
 
     @GetMapping("/total")
     public ResponseEntity<TotalMileageResponse> getTotalMileage(){
-        TotalMileageResponse response = mileageService.getTotalMileage();
-        return ResponseEntity.ok().body(response);
+        try {
+            TotalMileageResponse response = mileageService.getTotalMileage();
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping
     public ResponseEntity<CafeMileageResponse> getCafeMileage(@RequestParam Long cafeId){
-        CafeMileageResponse response = mileageService.getCafeMileage(cafeId);
-        return ResponseEntity.ok().body(response);
+        try {
+            CafeMileageResponse response = mileageService.getCafeMileage(cafeId);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping
-    public ResponseEntity<Void> saveMileage(@RequestBody SaveMileageRequest request){
-        mileageService.addMileage(request);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<SaveMileageResponse> saveMileage(@RequestBody SaveMileageRequest request){
+        try {
+            SaveMileageResponse response = mileageService.addMileage(request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/{cafeId}/usage")
     public ResponseEntity<Void> useMileage(@PathVariable Long cafeId){
-        mileageService.startMileageUsage(cafeId);
-        return ResponseEntity.ok().build();
+        try {
+            mileageService.startMileageUsage(cafeId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/{cafeId}/usage/end")
     public ResponseEntity<EndMileageUsageResponse> endMileage(@PathVariable Long cafeId){
-        EndMileageUsageResponse response = mileageService.endMileageUsage(cafeId);
-        return ResponseEntity.ok().body(response);
+        try {
+            EndMileageUsageResponse response = mileageService.endMileageUsage(cafeId);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
