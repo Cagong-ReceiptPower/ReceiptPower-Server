@@ -34,10 +34,7 @@ public class MemberController {
     //로그인 api
     @PostMapping("/login")
     public ResponseEntity<MemberLoginResponse> login(@Valid @RequestBody MemberLoginRequest request) {
-//        log.info("컨트롤러 진입: " + request);
-//        MemberLoginResponse response = memberService.login(request);
-//        return ResponseEntity.ok(response);
-                try {
+        try {
             MemberLoginResponse response = memberService.login(request);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
