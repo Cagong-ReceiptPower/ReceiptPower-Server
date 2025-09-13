@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver;
+package com.cagong.receiptpowerserver.member.auth;
 
 import com.cagong.receiptpowerserver.domain.member.MemberService;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberSignupRequest;

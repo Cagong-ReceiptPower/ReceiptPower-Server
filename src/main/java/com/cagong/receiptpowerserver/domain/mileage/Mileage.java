@@ -1,17 +1,20 @@
 package com.cagong.receiptpowerserver.domain.mileage;
 
 import com.cagong.receiptpowerserver.domain.cafe.Cafe;
+import com.cagong.receiptpowerserver.domain.common.BaseEntity;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Mileage {
+public class Mileage extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "mileage_id")
@@ -27,10 +30,47 @@ public class Mileage {
     @JoinColumn(name = "cafe_id")
     private Cafe cafe;
 
+    private LocalDateTime usageStartTime;
+
     @Builder
-    public Mileage(int point, Member member, Cafe cafe) {
+    private Mileage(int point, Member member, Cafe cafe){
         this.point = point;
         this.member = member;
         this.cafe = cafe;
+    }
+
+    public void addPoints(int pointsToAdd){
+        if (pointsToAdd < 0) {
+            throw new IllegalArgumentException("추가할 포인트는 0보다 커야 합니다.");
+        }
+        this.point += pointsToAdd;
+    }
+
+    public void startUsage() {
+        if (this.point <= 0) {
+            throw new IllegalStateException("마일리지가 부족하여 사용할 수 없습니다.");
+        }
+        if (this.usageStartTime != null) {
+            throw new IllegalStateException("이미 사용 중입니다.");
+        }
+        this.usageStartTime = LocalDateTime.now();
+    }
+
+    public int endUsage() {
+        if (this.usageStartTime == null) {
+            throw new IllegalStateException("사용이 시작되지 않았습니다.");
+        }
+
+        long minutes = Duration.between(this.usageStartTime, LocalDateTime.now()).toMinutes();
+        int pointsToUse = (int)minutes;
+
+        if (this.point < pointsToUse) {
+            throw new IllegalStateException("마일리지가 부족합니다.");
+        }
+
+        this.point -= pointsToUse;
+        this.usageStartTime = null;
+
+        return point;
     }
 }

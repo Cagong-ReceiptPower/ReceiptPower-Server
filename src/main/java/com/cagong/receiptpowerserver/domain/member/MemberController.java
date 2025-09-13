@@ -5,6 +5,7 @@ import com.cagong.receiptpowerserver.domain.member.dto.MemberSignupResponse;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberLoginRequest;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberLoginResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/members")
+@Slf4j
 public class MemberController {
 
     private final MemberService memberService;
@@ -38,10 +40,5 @@ public class MemberController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
-    }
-
-    @GetMapping
-    public ResponseEntity<Member> getAllMembers(){
-        return ResponseEntity.ok().build();
     }
 }
