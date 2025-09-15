@@ -1,4 +1,4 @@
-package com.cagong.receiptpowerserver;
+package com.cagong.receiptpowerserver.member;
 
 import com.cagong.receiptpowerserver.domain.member.Member;
 import com.cagong.receiptpowerserver.domain.member.MemberRepository;
