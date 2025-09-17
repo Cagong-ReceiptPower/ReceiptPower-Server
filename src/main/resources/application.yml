@@ -11,10 +11,19 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "${CLIENT_SECRET}"
+            client-secret: "${CLIENT_SECRET}"
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            scope:
+              - email
+              - profile
+            authorization-grant-type: authorization_code
+            client-name: Google
 
 jwt:
-  secret: ThisIsA_VeryLongAndSecureSecretKeyForJwt_YouShouldChangeThis
+  secret: "${JWT_SECRET}"
