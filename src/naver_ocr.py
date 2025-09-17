@@ -75,11 +75,11 @@ def parse_receipt_text(fields):
         "total_amount": total_amount,
     }
 
-# ========== STEP 3: FastAPI 엔드포인트 ==========
+# ========== STEP 3: FastAPI 엔드포인트 ========== 여기에 secret_key를 알맞게 써넣어야함.
 @app.get("/")
 def read_receipt():
     api_url = "https://a4dyolhyl2.apigw.ntruss.com/custom/v1/40636/e9a63827526c61487a35ffaa58677583b4b95176dd8359fdd514d361674b7a65/general"
-    secret_key = "ZXNSSHJpaklUcGVodlpOb2NVSEl1UUt0eWJKQUZZSWU="
+    secret_key = "---노션에 적어 놓음---"
     image_file = "C:/Users/junie/Downloads/Quick Share/20250522_130512.jpg"
 
     try:
