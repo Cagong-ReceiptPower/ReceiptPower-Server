@@ -75,7 +75,7 @@ def parse_receipt_text(fields):
         "total_amount": total_amount,
     }
 
-# ========== STEP 3: FastAPI 엔드포인트 ========== 여기에 secret_key를 알맞게 써넣어야함.
+# ========== STEP 3: FastAPI 엔드포인트 ========== 여기에 secret_key를 알맞게 써넣어야함. / 그리고 여기에 사진의 위치가 들어가야함
 @app.get("/")
 def read_receipt():
     api_url = "https://a4dyolhyl2.apigw.ntruss.com/custom/v1/40636/e9a63827526c61487a35ffaa58677583b4b95176dd8359fdd514d361674b7a65/general"
