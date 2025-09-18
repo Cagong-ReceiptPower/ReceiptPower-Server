@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 import io
+from pathlib import Path
 
 app = FastAPI()
 
@@ -26,8 +27,9 @@ class SimpleCNN(nn.Module):
         return self.net(x)
 
 # ===== 모델 불러오기 =====
+model_path = Path(__file__).parent / "my_cafe_cnn_state_dict.pth"
 model = SimpleCNN()
-model.load_state_dict(torch.load("my_cafe_cnn_state_dict.pth", map_location=torch.device("cpu")))
+model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
 model.eval()
 
 # ===== 이미지 전처리 =====
@@ -49,11 +51,13 @@ async def predict(file: UploadFile = File(...)):
     # 예측
     with torch.no_grad():
         output = model(image)
-        prob = torch.sigmoid(output)
-        prediction = (prob > 0.5).item()
+        prob = torch.sigmoid(output).item()
+
+    prediction = 1 if prob > 0.5 else 0  # 1 = 내 카페, 0 = 다른 카페
 
     result = {
-        "확률": float(prob.item()),
-        "판별": "내 카페 영수증 O" if prediction == 0 else "다른 카페 영수증 X"
+        "probability": prob,
+        "label": "my_cafe" if prediction == 1 else "other_cafe"
     }
     return result
+
