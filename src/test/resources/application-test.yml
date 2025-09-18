@@ -15,3 +15,19 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "test-client-id"
+            client-secret: "test-client-secret"
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            scope:
+              - email
+              - profile
+            authorization-grant-type: authorization_code
+            client-name: Google
+
+jwt:
+  secret: ThisIsA_VeryLongAndSecureSecretKeyForJwtTEST_YouShouldChange
