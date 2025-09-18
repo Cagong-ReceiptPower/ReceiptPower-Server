@@ -1,17 +1,20 @@
 import requests
 import json
 import re
-from fastapi import FastAPI
+import shutil
+import uuid
+import os
+from fastapi import FastAPI, UploadFile, File
 
 app = FastAPI()
 
-# ========== STEP 1: 이미지 파일 OCR 요청 ==========
+# ========== STEP 1: 네이버 Clova OCR 호출 ==========
 def call_clova_ocr(image_path, api_url, secret_key):
     headers = {"X-OCR-SECRET": secret_key}
     data = {
         "message": json.dumps({
             "version": "V2",
-            "requestId": "unique-request-id",
+            "requestId": str(uuid.uuid4()),  # 요청마다 고유 ID
             "timestamp": 0,
             "images": [
                 {"name": "receipt", "format": "jpg", "data": ""}
@@ -24,13 +27,12 @@ def call_clova_ocr(image_path, api_url, secret_key):
         response = requests.post(api_url, headers=headers, data=data, files=files, timeout=10)
 
     result = response.json()
-    # 안전하게 접근
     try:
         return result["images"][0]["fields"]
     except (KeyError, IndexError):
         raise ValueError(f"OCR 응답 오류: {result}")
 
-# ========== STEP 2: 텍스트 필드 파싱 함수 ==========
+# ========== STEP 2: OCR 결과 파싱 ==========
 def parse_receipt_text(fields):
     lines = [field["inferText"].strip() for field in fields if field["inferText"].strip()]
 
@@ -75,15 +77,23 @@ def parse_receipt_text(fields):
         "total_amount": total_amount,
     }
 
-# ========== STEP 3: FastAPI 엔드포인트 ========== 여기에 secret_key를 알맞게 써넣어야함. / 그리고 여기에 사진의 위치가 들어가야함
-@app.get("/")
-def read_receipt():
-    api_url = "https://a4dyolhyl2.apigw.ntruss.com/custom/v1/40636/e9a63827526c61487a35ffaa58677583b4b95176dd8359fdd514d361674b7a65/general"
+# ========== STEP 3: FastAPI 엔드포인트 ==========
+@app.post("/ocr")
+async def ocr_receipt(file: UploadFile = File(...)):
+    # temp 폴더 생성 (없으면)
+    os.makedirs("temp", exist_ok=True)
+
+    # 업로드된 파일을 temp/에 저장
+    filename = f"temp/{uuid.uuid4()}.jpg"
+    with open(filename, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Clova OCR API 설정 여기에 secret_key를 알맞게 써넣어야함!!!
+    api_url = "https://a4dyolhyl2.apigw.ntruss.com/custom/v1/40636/e9a63827526c61487a35ffaa58677583b4b95176dd8359fdd514d361674b7a65/general"  # 실제 URL
     secret_key = "---노션에 적어 놓음---"
-    image_file = "C:/Users/junie/Downloads/Quick Share/20250522_130512.jpg"
 
     try:
-        fields = call_clova_ocr(image_file, api_url, secret_key)
+        fields = call_clova_ocr(filename, api_url, secret_key)
         parsed = parse_receipt_text(fields)
         return {
             "주문번호": parsed["order_number"] or "없음",
@@ -92,3 +102,8 @@ def read_receipt():
         }
     except Exception as e:
         return {"error": str(e)}
+    finally:
+        # 임시 파일 삭제 (서버에 쌓이지 않게)
+        if os.path.exists(filename):
+            os.remove(filename)
+
