@@ -21,12 +21,15 @@ public class Member {
     @Column(nullable = false)
     private String password;
 
+    private Double currentLatitude;
+    private Double currentLongitude;
+
     @Builder
-    public  Member(String username, String email, String password){
+    public Member(String username, String email, String password, Double currentLatitude, Double currentLongitude){
         this.username = username;
         this.email = email;
         this.password = password;
+        this.currentLatitude = currentLatitude;
+        this.currentLongitude = currentLongitude;
     }
-
-
 }

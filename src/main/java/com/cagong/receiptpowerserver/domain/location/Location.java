@@ -2,28 +2,24 @@ package com.cagong.receiptpowerserver.domain.location;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
 
 @Entity
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(nullable = false)
-    private Double latitude;    // 위도
-    
-    @Column(nullable = false)
-    private Double longitude;   // 경도
-    
-    private String address;     // 주소
-    
-    @CreatedDate
-    private LocalDateTime createdAt;
+
+    private String address;
+
+    private Double latitude;
+
+    private Double longitude;
 }
