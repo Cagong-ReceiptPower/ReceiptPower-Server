@@ -19,12 +19,18 @@ public class Cafe {
 
     private String address;
 
+    private double latitude;
+
+    private double longitude;
+
     private String phoneNumber;
 
     @Builder
-    public Cafe(String name, String address, String phoneNumber) {
+    public Cafe(String name, String address, double latitude, double longitude, String phoneNumber) {
         this.name = name;
         this.address = address;
+        this.latitude = latitude;
+        this. longitude = longitude;
         this.phoneNumber = phoneNumber;
     }
 }
