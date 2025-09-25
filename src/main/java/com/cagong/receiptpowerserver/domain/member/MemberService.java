@@ -53,7 +53,7 @@ public class MemberService {
         }
         
         // 3. JWT 토큰 생성
-        String accessToken = jwtUtil.generateAccessToken(member.getId(), member.getUsername());
+        String accessToken = jwtUtil.generateAccessToken(member.getId(), member.getId().toString());
         
         return new MemberLoginResponse(member, accessToken);
     }
