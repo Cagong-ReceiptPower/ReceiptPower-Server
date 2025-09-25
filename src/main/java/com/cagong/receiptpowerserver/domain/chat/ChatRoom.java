@@ -62,4 +62,9 @@ public class ChatRoom {
         this.maxParticipants = maxParticipants != null ? maxParticipants : DEFAULT_MAX_PARTICIPANTS;
         this.searchRadius = searchRadius != null ? searchRadius : DEFAULT_SEARCH_RADIUS;
     }
+
+    // 상태 변경 메서드 추가
+    public void setStatus(ChatRoomStatus status) {
+        this.status = status;
+    }
 }
