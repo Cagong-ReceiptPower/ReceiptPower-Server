@@ -23,9 +23,9 @@ public class CafeController {
     }
 
     @GetMapping("/{cafeId}")
-    public ResponseEntity<CafeResponse> getCafeById(@PathVariable Long cafeID){
+    public ResponseEntity<CafeResponse> getCafeById(@PathVariable Long cafeId){
         try{
-            CafeResponse response = cafeService.getCafeById(cafeID);
+            CafeResponse response = cafeService.getCafeById(cafeId);
             return ResponseEntity.ok().body(response);
         } catch (IllegalArgumentException e){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
