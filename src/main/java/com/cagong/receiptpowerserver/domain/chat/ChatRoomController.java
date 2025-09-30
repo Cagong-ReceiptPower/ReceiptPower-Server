@@ -3,6 +3,7 @@ package com.cagong.receiptpowerserver.domain.chat;
 import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomCreateRequest;
 import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomResponse;
 import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomStatusUpdateRequest;
+import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,13 +16,13 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/chat-rooms")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
 
-    @PostMapping
+    @PostMapping("/chat-rooms")
     public ResponseEntity<ChatRoomResponse> create(
             @Valid @RequestBody ChatRoomCreateRequest request,
             Authentication authentication
@@ -38,6 +39,12 @@ public class ChatRoomController {
         ).body(response);
     }
 
+    // [추가] 특정 카페의 모든 채팅방을 조회하는 API
+    @GetMapping("/cafes/{cafeId}/chat-rooms")
+    public ResponseEntity<List<ChatRoomResponse>> getRoomsByCafe(@PathVariable Long cafeId) {
+        return ResponseEntity.ok(chatRoomService.getRoomsByCafe(cafeId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ChatRoomResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(chatRoomService.getById(id));
@@ -47,15 +54,6 @@ public class ChatRoomController {
     public ResponseEntity<List<ChatRoomResponse>> getMyRooms(Authentication authentication) {
         Long authenticatedUserId = extractUserId(authentication);
         return ResponseEntity.ok(chatRoomService.getMyRooms(authenticatedUserId));
-    }
-
-    @GetMapping("/nearby")
-    public ResponseEntity<List<ChatRoomResponse>> nearby(
-            @RequestParam Double latitude,
-            @RequestParam Double longitude,
-            @RequestParam(name = "radiusKm", defaultValue = "3.0") Double radiusKm
-    ) {
-        return ResponseEntity.ok(chatRoomService.findNearby(latitude, longitude, radiusKm));
     }
 
     @PatchMapping("/{id}/status")
@@ -72,10 +70,6 @@ public class ChatRoomController {
 
     /**
      * 인증 주체에서 Long 타입의 사용자 ID를 추출합니다.
-     * 지원 케이스:
-     * - UserDetails#getUsername()이 숫자 문자열인 경우
-     * - principal이 String이고 숫자 문자열인 경우
-     * - principal이 getId() 메서드(Long 반환)를 보유한 커스텀 Principal인 경우(리플렉션)
      */
     private Long extractUserId(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -83,6 +77,13 @@ public class ChatRoomController {
         }
 
         Object principal = authentication.getPrincipal();
+
+        // [수정된 부분]: CustomUserDetails 타입인지 확인하고 ID를 직접 추출
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            return customUserDetails.getId();
+        }
+
+        // --- 이하 코드는 기존 코드의 안전 장치로 사용됩니다 ---
 
         if (principal instanceof UserDetails userDetails) {
             try {

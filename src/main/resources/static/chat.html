@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Test (Authenticated)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: sans-serif; }
+        #container { max-width: 600px; margin: auto; padding: 20px; }
+        .form-group, #chat-form { display: flex; gap: 10px; margin-bottom: 10px; }
+        input { padding: 8px; flex-grow: 1; }
+        button { padding: 8px 12px; }
+        #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <h2>WebSocket Chat Test (Authenticated)</h2>
+
+    <div class="form-group">
+        <input type="text" id="jwtToken" placeholder="Your JWT Token" style="width: 100%;">
+    </div>
+
+    <div class="form-group">
+        <input type="text" id="roomId" placeholder="Room ID" value="1">
+        <button id="connect" onclick="connect()">Connect</button>
+        <button id="disconnect" onclick="disconnect()" disabled>Disconnect</button>
+    </div>
+
+    <div id="chat-form">
+        <input type="text" id="message" placeholder="Enter message..." disabled>
+        <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+
+    <div id="messages"></div>
+</div>
+
+<script>
+    var stompClient = null;
+
+    function setConnected(connected) {
+        document.getElementById('connect').disabled = connected;
+        document.getElementById('disconnect').disabled = !connected;
+        document.getElementById('message').disabled = !connected;
+        document.getElementById('sendBtn').disabled = !connected;
+        document.getElementById('jwtToken').disabled = connected;
+        document.getElementById('roomId').disabled = connected;
+        if (!connected) { document.getElementById("messages").innerHTML = ""; }
+    }
+
+    function connect() {
+        var roomId = document.getElementById('roomId').value;
+        var token = document.getElementById('jwtToken').value;
+
+        if (!roomId || !token) {
+            alert("Room ID와 JWT Token을 모두 입력해주세요.");
+            return;
+        }
+
+        var socket = new SockJS('/ws-stomp');
+        stompClient = Stomp.over(socket);
+
+        var headers = { 'Authorization': 'Bearer ' + token };
+
+        stompClient.connect(headers, function (frame) {
+            setConnected(true);
+            console.log('Connected: ' + frame);
+
+            stompClient.subscribe('/sub/chat/room/' + roomId, function (message) {
+                showMessage(JSON.parse(message.body));
+            });
+
+            // 입장 메시지에는 발신자 정보를 보낼 필요가 없습니다. 서버가 토큰으로 압니다.
+            stompClient.send("/pub/chat/message", {}, JSON.stringify({
+                'type': 'ENTER',
+                'roomId': roomId
+            }));
+
+        }, function(error) {
+            alert("연결에 실패했습니다. 토큰이 유효한지 확인하세요.\n" + error);
+            console.error(error);
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) { stompClient.disconnect(); }
+        setConnected(false);
+        console.log("Disconnected");
+    }
+
+    function sendMessage() {
+        var roomId = document.getElementById('roomId').value;
+        var messageContent = document.getElementById('message').value;
+
+        // 메시지 전송 시에도 발신자 정보를 보낼 필요가 없습니다.
+        stompClient.send("/pub/chat/message", {}, JSON.stringify({
+            'type': 'TALK',
+            'roomId': roomId,
+            'message': messageContent
+        }));
+        document.getElementById('message').value = '';
+    }
+
+    function showMessage(message) {
+        var messages = document.getElementById('messages');
+        var messageElement = document.createElement('div');
+        var content = '[' + message.sender + '] ' + message.message;
+        if(message.type === 'ENTER' || message.type === 'QUIT') {
+            content = message.message;
+        }
+        messageElement.appendChild(document.createTextNode(content));
+        messages.appendChild(messageElement);
+        messages.scrollTop = messages.scrollHeight;
+    }
+</script>
+
+</body>
+</html>

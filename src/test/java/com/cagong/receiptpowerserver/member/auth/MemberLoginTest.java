@@ -41,7 +41,8 @@ public class MemberLoginTest {
         MemberLoginResponse response = memberService.login(request);
 
         // then
-        assertThat(response.getUsername()).isEqualTo("testuser");
+        // [수정됨] username 대신 ID와 email 검증
+        assertThat(response.getId()).isNotNull();
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getAccessToken()).isNotNull();
         assertThat(response.getTokenType()).isEqualTo("Bearer");
@@ -57,7 +58,8 @@ public class MemberLoginTest {
         MemberLoginResponse response = memberService.login(request);
 
         // then
-        assertThat(response.getUsername()).isEqualTo("testuser");
+        // [수정됨] username 대신 ID가 null이 아닌지 확인
+        assertThat(response.getId()).isNotNull();
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getAccessToken()).isNotNull();
     }

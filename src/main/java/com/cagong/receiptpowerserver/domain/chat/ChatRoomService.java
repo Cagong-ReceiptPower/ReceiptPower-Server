@@ -26,7 +26,6 @@ public class ChatRoomService {
     public ChatRoomResponse create(ChatRoomCreateRequest req, Long authenticatedUserId) {
         Member creator = memberRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new NotFoundException("creator not found: " + authenticatedUserId));
-
         Cafe cafe = cafeRepository.findById(req.getCafeId())
                 .orElseThrow(() -> new NotFoundException("cafe not found: " + req.getCafeId()));
 
@@ -47,6 +46,7 @@ public class ChatRoomService {
         return toResponse(saved);
     }
 
+    // [추가] 특정 카페에 속한 채팅방 목록을 조회하는 서비스 메서드
     @Transactional(readOnly = true)
     public List<ChatRoomResponse> getRoomsByCafe(Long cafeId) {
         return chatRoomRepository.findByCafeIdAndStatus(cafeId, ChatRoomStatus.ACTIVE)
