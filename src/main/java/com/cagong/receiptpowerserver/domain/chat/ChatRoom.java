@@ -1,6 +1,6 @@
 package com.cagong.receiptpowerserver.domain.chat;
 
-import com.cagong.receiptpowerserver.domain.location.Location;
+import com.cagong.receiptpowerserver.domain.cafe.Cafe;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -20,7 +20,6 @@ public class ChatRoom {
 
     // 기본값 설정
     private static final Integer DEFAULT_MAX_PARTICIPANTS = 10; // 기본값 우선 10명
-    private static final Double DEFAULT_SEARCH_RADIUS = 1.0; // 반경 기본값 1km
 
     //기본 식별자
     @Id
@@ -31,10 +30,10 @@ public class ChatRoom {
     @Column(nullable = false)
     private String title;
 
-    // 위치 정보 - 1대1 관계 사용, ChatRoom : Location = 1:1
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "location_id")
-    private Location location;
+    // 하나의 카페에 여러 채팅방 가능
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cafe_id")
+    private Cafe cafe;
 
     // 생성자 정보 - 다대일 관게 ChatRoom : Member = N:1
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,8 +44,6 @@ public class ChatRoom {
     @Column(nullable = false)
     private Integer maxParticipants = DEFAULT_MAX_PARTICIPANTS;  // 최대 참여자 수 - 필수 입력, 기본값 : 10명
 
-    private Double searchRadius = DEFAULT_SEARCH_RADIUS;      // 검색 반경(km), 기본값 : 1km
-
     // 상태 관리 - ChatRoomStatus Enum - ACTIVE, INACTIVE, CLOSED
     @Enumerated(EnumType.STRING)
     private ChatRoomStatus status = ChatRoomStatus.ACTIVE;
@@ -55,12 +52,11 @@ public class ChatRoom {
     private LocalDateTime createdAt;
 
     @Builder
-    public ChatRoom(String title, Location location, Member creator, Integer maxParticipants, Double searchRadius) {
+    public ChatRoom(String title, Cafe cafe, Member creator, Integer maxParticipants) {
         this.title = title;
-        this.location = location;
+        this.cafe = cafe; // location -> cafe
         this.creator = creator;
-        this.maxParticipants = maxParticipants != null ? maxParticipants : DEFAULT_MAX_PARTICIPANTS;
-        this.searchRadius = searchRadius != null ? searchRadius : DEFAULT_SEARCH_RADIUS;
+        this.maxParticipants = maxParticipants != null ? maxParticipants : 10;
     }
 
     // 상태 변경 메서드 추가

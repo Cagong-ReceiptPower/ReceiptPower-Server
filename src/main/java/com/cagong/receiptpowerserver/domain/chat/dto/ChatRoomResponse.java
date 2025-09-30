@@ -11,19 +11,17 @@ public class ChatRoomResponse {
     private final String title;
     private final Long creatorId;
     private final Integer maxParticipants;
-    private final Double searchRadius;
     private final String status;
     private final LocalDateTime createdAt;
 
     @Builder
     public ChatRoomResponse(Long id, String title, Long creatorId,
-                            Integer maxParticipants, Double searchRadius,
+                            Integer maxParticipants,
                             String status, LocalDateTime createdAt) {
         this.id = id;
         this.title = title;
         this.creatorId = creatorId;
         this.maxParticipants = maxParticipants;
-        this.searchRadius = searchRadius;
         this.status = status;
         this.createdAt = createdAt;
     }

@@ -1,46 +1,59 @@
 package com.cagong.receiptpowerserver.global.config;
 
+// 필요한 import 문들...
+import com.cagong.receiptpowerserver.global.jwt.JwtAuthenticationFilter; // 이 부분을 import 해주세요.
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.http.SessionCreationPolicy; // Session 정책 import
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.cors.CorsConfiguration; // CorsConfiguration 추가
-import org.springframework.web.cors.CorsConfigurationSource; // CorsConfigurationSource 추가
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource; // UrlBasedCorsConfigurationSource 추가
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; // 이 부분을 import 해주세요.
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays; // Arrays 추가
+import java.util.Arrays;
 
 @Configuration
+@RequiredArgsConstructor // final 필드 주입을 위해 추가
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()) // CORS 설정 추가
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 조회 API는 공개
+
+                        .requestMatchers("/chat.html", "/ws-stomp/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/members/signup", "/members/login").permitAll()
+                        // [수정] 아래 한 줄을 추가 -> 카페별 채팅방 조회 API를 허용
+                        .requestMatchers(HttpMethod.GET, "/api/cafes/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/chat-rooms/**").permitAll()
-                        // 생성/상태 변경은 인증 필요
-                        .requestMatchers(HttpMethod.POST, "/api/chat-rooms").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/api/chat-rooms/**").authenticated()
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults());
+                .httpBasic(httpBasic -> httpBasic.disable());
+
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
-    // CORS 설정 빈 추가
+    // CORS 설정 빈 (기존 코드와 거의 동일)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8080", "null")); // 모든 출처 허용. "null"은 로컬 파일 접근을 허용
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")); // 모든 HTTP 메서드 허용
-        configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더 허용
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:8080")); // 프론트엔드 주소에 맞게 수정
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true); // 자격 증명 허용
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

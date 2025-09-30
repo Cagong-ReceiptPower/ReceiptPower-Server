@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
@@ -19,6 +20,8 @@ public class JwtUtil {
     private static final long ACCESS_TOKEN_EXPIRATION = 86400000;
 
     public JwtUtil() {
+        // [최종 수정]: Base64 인코딩을 제거하고, 문자열을 직접 바이트로 변환합니다.
+        // 이 키는 이미 512비트 HMAC에 적합한 길이의 문자열입니다.
         this.key = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes());
         this.accessTokenExpiration = ACCESS_TOKEN_EXPIRATION;
     }
