@@ -19,3 +19,8 @@ spring:
 
 jwt:
   secret: ff0d12fcdb370301eef108a0e87970dd3082e23766c077fe1386126fa513d32b
+
+# [추가] 카카오 API 설정
+kakao:
+  api:
+    key: "4521a6487bdd2cf33257590cb3d5a813"
