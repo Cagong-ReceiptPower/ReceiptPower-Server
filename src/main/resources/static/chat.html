@@ -1,113 +1,241 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chat Test (Authenticated)</title>
+    <title>Cagong Chat with Map</title>
+    <meta charset="UTF-8">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=837372e8e2d4e19bc68abe6ed1948d95&libraries=services"></script>
+
     <style>
-        body { font-family: sans-serif; }
-        #container { max-width: 600px; margin: auto; padding: 20px; }
-        .form-group, #chat-form { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { padding: 8px; flex-grow: 1; }
-        button { padding: 8px 12px; }
-        #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .view { display: none; } /* 모든 뷰는 일단 숨김 */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="password"] { width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; border: none; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; }
+        button:disabled { background-color: #ccc; }
+        #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px; }
+        #chatroom-list { list-style: none; padding: 0; }
+        #chatroom-list li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        #chatroom-list li:hover { background-color: #f0f0f0; }
+        #map { width: 100%; height: 400px; margin-bottom: 15px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<div id="container">
-    <h2>WebSocket Chat Test (Authenticated)</h2>
+<div class="container">
 
-    <div class="form-group">
-        <input type="text" id="jwtToken" placeholder="Your JWT Token" style="width: 100%;">
+    <div id="login-view" class="view" style="display: block;">
+        <h2>로그인</h2>
+        <div class="form-group"><input type="text" id="login-email" placeholder="이메일 또는 사용자명"></div>
+        <div class="form-group"><input type="password" id="login-password" placeholder="비밀번호"></div>
+        <button onclick="login()">로그인</button>
     </div>
 
-    <div class="form-group">
-        <input type="text" id="roomId" placeholder="Room ID" value="1">
-        <button id="connect" onclick="connect()">Connect</button>
-        <button id="disconnect" onclick="disconnect()" disabled>Disconnect</button>
+    <div id="map-view" class="view">
+        <h2>주변 카페 선택</h2>
+        <div id="map"></div>
+        <button onclick="logout()">로그아웃</button>
     </div>
 
-    <div id="chat-form">
-        <input type="text" id="message" placeholder="Enter message..." disabled>
-        <button id="sendBtn" onclick="sendMessage()">Send</button>
+    <div id="chatroom-list-view" class="view">
+        <h2 id="selected-cafe-name"></h2>
+        <p>참여할 채팅방을 선택하거나, 새 채팅방을 만들어보세요.</p>
+        <ul id="chatroom-list"></ul>
+        <button onclick="showCreateRoomForm()" id="create-room-btn">새 채팅방 만들기</button>
+        <button onclick="backToMap()">지도으로 돌아가기</button>
     </div>
 
-    <div id="messages"></div>
+    <div id="create-chatroom-view" class="view">
+        <h3 id="create-room-cafe-name"></h3>
+        <div class="form-group"><input type="text" id="room-title" placeholder="채팅방 제목"></div>
+        <button onclick="createChatRoom()">만들기</button>
+        <button onclick="backToChatRoomList()">취소</button>
+    </div>
+
+    <div id="chat-view" class="view">
+        <h2 id="chat-room-title"></h2>
+        <div id="messages"></div>
+        <div class="form-group" style="display: flex;">
+            <input type="text" id="message-input" placeholder="메시지를 입력하세요...">
+            <button onclick="sendMessage()">전송</button>
+        </div>
+        <button onclick="disconnect()">채팅방 나가기</button>
+    </div>
+
 </div>
 
 <script>
-    var stompClient = null;
+    // 전역 변수
+    let jwtToken = null;
+    let stompClient = null;
+    let currentCafe = null;
+    let currentRoomId = null;
+    let map = null;
 
-    function setConnected(connected) {
-        document.getElementById('connect').disabled = connected;
-        document.getElementById('disconnect').disabled = !connected;
-        document.getElementById('message').disabled = !connected;
-        document.getElementById('sendBtn').disabled = !connected;
-        document.getElementById('jwtToken').disabled = connected;
-        document.getElementById('roomId').disabled = connected;
-        if (!connected) { document.getElementById("messages").innerHTML = ""; }
+    // 뷰 전환 헬퍼
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+        document.getElementById(viewId).style.display = 'block';
     }
 
-    function connect() {
-        var roomId = document.getElementById('roomId').value;
-        var token = document.getElementById('jwtToken').value;
-
-        if (!roomId || !token) {
-            alert("Room ID와 JWT Token을 모두 입력해주세요.");
-            return;
-        }
-
-        var socket = new SockJS('/ws-stomp');
-        stompClient = Stomp.over(socket);
-
-        var headers = { 'Authorization': 'Bearer ' + token };
-
-        stompClient.connect(headers, function (frame) {
-            setConnected(true);
-            console.log('Connected: ' + frame);
-
-            stompClient.subscribe('/sub/chat/room/' + roomId, function (message) {
-                showMessage(JSON.parse(message.body));
+    // 1. 로그인
+    async function login() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        try {
+            const response = await fetch('/members/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usernameOrEmail: email, password: password })
             });
+            if (!response.ok) throw new Error('로그인 실패');
+            const data = await response.json();
+            jwtToken = data.accessToken;
+            alert('로그인 성공!');
+            showView('map-view');
+            loadMap(); // 로그인 성공 후 지도 로드
+        } catch (error) { alert(error.message); }
+    }
 
-            // 입장 메시지에는 발신자 정보를 보낼 필요가 없습니다. 서버가 토큰으로 압니다.
-            stompClient.send("/pub/chat/message", {}, JSON.stringify({
-                'type': 'ENTER',
-                'roomId': roomId
-            }));
+    function logout() {
+        jwtToken = null;
+        alert('로그아웃 되었습니다.');
+        showView('login-view');
+    }
 
-        }, function(error) {
-            alert("연결에 실패했습니다. 토큰이 유효한지 확인하세요.\n" + error);
-            console.error(error);
-        });
+    // 2. 지도 로드 및 카페 검색
+    function loadMap() {
+        const mapContainer = document.getElementById('map');
+        const mapOption = {
+            center: new kakao.maps.LatLng(37.4979, 127.0276), // 강남역 중심
+            level: 3
+        };
+        map = new kakao.maps.Map(mapContainer, mapOption);
+
+        const ps = new kakao.maps.services.Places();
+        ps.keywordSearch('카페', (data, status, pagination) => {
+            if (status === kakao.maps.services.Status.OK) {
+                data.forEach(place => {
+                    const marker = new kakao.maps.Marker({
+                        map: map,
+                        position: new kakao.maps.LatLng(place.y, place.x)
+                    });
+
+                    // 마커에 클릭 이벤트를 등록합니다
+                    kakao.maps.event.addListener(marker, 'click', () => {
+                        selectCafe(place.place_name);
+                    });
+                });
+            }
+        }, { location: map.getCenter() });
+    }
+
+    async function selectCafe(cafeName) {
+        try {
+            const response = await fetch(`/api/cafes/details?query=${encodeURIComponent(cafeName)}`);
+            if (!response.ok) throw new Error('카페 정보를 불러오는 데 실패했습니다.');
+            const data = await response.json();
+            currentCafe = data;
+
+            document.getElementById('selected-cafe-name').innerText = data.name;
+            const listElement = document.getElementById('chatroom-list');
+            listElement.innerHTML = '';
+            if (data.chatRooms.length === 0) {
+                listElement.innerHTML = '<li>개설된 채팅방이 없습니다.</li>';
+            } else {
+                data.chatRooms.forEach(room => {
+                    const li = document.createElement('li');
+                    li.innerText = `${room.title} (ID: ${room.id})`;
+                    li.onclick = () => joinChatRoom(room.id, room.title);
+                    listElement.appendChild(li);
+                });
+            }
+            showView('chatroom-list-view');
+        } catch (error) { alert(error.message); }
+    }
+
+    function backToMap() {
+        showView('map-view');
+    }
+
+    // 3. 채팅방 생성/목록 뷰 관련
+    function showCreateRoomForm() {
+        document.getElementById('create-room-cafe-name').innerText = `${currentCafe.name}에 새 채팅방 만들기`;
+        showView('create-chatroom-view');
+    }
+
+    function backToChatRoomList() {
+        showView('chatroom-list-view');
+    }
+
+    async function createChatRoom() {
+        const title = document.getElementById('room-title').value;
+        if (!title) { alert('채팅방 제목을 입력해주세요.'); return; }
+        try {
+            const response = await fetch('/api/chat-rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({ title: title, cafeId: currentCafe.cafeId, maxParticipants: 10 })
+            });
+            if (!response.ok) throw new Error('채팅방 생성 실패');
+            const newRoom = await response.json();
+            alert(`'${newRoom.title}' 채팅방이 생성되었습니다!`);
+            joinChatRoom(newRoom.id, newRoom.title);
+        } catch (error) { alert(error.message); }
+    }
+
+    // 4. 채팅방 참여 (웹소켓)
+    function joinChatRoom(roomId, roomTitle) {
+        if (!jwtToken) { alert('로그인이 필요합니다.'); return; }
+        currentRoomId = roomId;
+        const socket = new SockJS('/ws-stomp');
+        stompClient = Stomp.over(socket);
+        const headers = { 'Authorization': `Bearer ${jwtToken}` };
+        stompClient.connect(headers, (frame) => {
+            console.log('Connected: ' + frame);
+            showView('chat-view');
+            document.getElementById('chat-room-title').innerText = roomTitle;
+            stompClient.subscribe(`/sub/chat/room/${roomId}`, (message) => showMessage(JSON.parse(message.body)));
+            stompClient.send("/pub/chat/message", {}, JSON.stringify({ type: 'ENTER', roomId: roomId }));
+        }, (error) => alert("연결 실패:\n" + error));
     }
 
     function disconnect() {
-        if (stompClient !== null) { stompClient.disconnect(); }
-        setConnected(false);
-        console.log("Disconnected");
+        if (stompClient !== null) {
+            stompClient.disconnect(() => {
+                alert("채팅방에서 나왔습니다.");
+                // 채팅방 목록 뷰로 돌아가기 전에, 해당 카페 정보를 다시 불러옵니다.
+                selectCafe(currentCafe.name);
+            });
+        }
+        stompClient = null;
     }
 
     function sendMessage() {
-        var roomId = document.getElementById('roomId').value;
-        var messageContent = document.getElementById('message').value;
-
-        // 메시지 전송 시에도 발신자 정보를 보낼 필요가 없습니다.
-        stompClient.send("/pub/chat/message", {}, JSON.stringify({
-            'type': 'TALK',
-            'roomId': roomId,
-            'message': messageContent
-        }));
-        document.getElementById('message').value = '';
+        const messageContent = document.getElementById('message-input').value;
+        if (messageContent && stompClient) {
+            stompClient.send("/pub/chat/message", {}, JSON.stringify({
+                type: 'TALK',
+                roomId: currentRoomId,
+                message: messageContent
+            }));
+            document.getElementById('message-input').value = '';
+        }
     }
 
     function showMessage(message) {
-        var messages = document.getElementById('messages');
-        var messageElement = document.createElement('div');
-        var content = '[' + message.sender + '] ' + message.message;
-        if(message.type === 'ENTER' || message.type === 'QUIT') {
-            content = message.message;
+        const messages = document.getElementById('messages');
+        const messageElement = document.createElement('p');
+        let content = `[${message.sender}] ${message.message}`;
+        if (message.type === 'ENTER' || message.type === 'QUIT') {
+            content = `--- ${message.message} ---`;
         }
         messageElement.appendChild(document.createTextNode(content));
         messages.appendChild(messageElement);
