@@ -16,6 +16,10 @@ public class Cafe {
     @Column(name = "cafe_id")
     private Long id;
 
+    // [추가] 카카오 장소 ID를 저장할 필드. 카페가 중복 저장되는 것을 막는다.
+    @Column(unique = true)
+    private String kakaoPlaceId;
+
     private String name;
 
     private String address;
@@ -27,12 +31,8 @@ public class Cafe {
     private String phoneNumber;
 
     @Builder
-    public Cafe(String name, String address, double latitude, double longitude, String phoneNumber) {
-        this.name = name;
-        this.address = address;
-        this.latitude = latitude;
-        this. longitude = longitude;
-        this.phoneNumber = phoneNumber;
+    public Cafe(String kakaoPlaceId, String name, String address, String phoneNumber) {
+        this.kakaoPlaceId = kakaoPlaceId;
     }
 
     public void updateFrom(CafeRequest request) {

@@ -26,3 +26,7 @@ spring:
 
 jwt:
   secret: "${JWT_SECRET}"
+# [추가] 카카오 API 설정
+kakao:
+  api:
+    key: "${KAKAO_API_KEY}" # 실제 키 대신 .env 파일의 변수 이름을 사용
