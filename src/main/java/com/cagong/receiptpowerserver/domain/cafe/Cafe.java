@@ -31,7 +31,7 @@ public class Cafe {
     private String phoneNumber;
 
     @Builder
-    public Cafe(String kakaoPlaceId, String name, String address, String phoneNumber) {
+    public Cafe(String kakaoPlaceId, String name, double latitude, double longitude, String address, String phoneNumber) {
         this.kakaoPlaceId = kakaoPlaceId;
     }
 
