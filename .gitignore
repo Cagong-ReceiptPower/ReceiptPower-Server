@@ -40,6 +40,7 @@ out/
 .vscode/
 
 mydb.db
+testdb.mv.db
 .env
 github-actions-key
 github-actions-key.pub
