@@ -29,9 +29,11 @@ public class MqttService {
         Cafe cafe = cafeRepository.findById(cafeId)
                 .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
-        Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
-                .orElseThrow(() -> new RuntimeException());
-        int remainingMileageTime = mileage.getPoint();
+        // Mileage 엔티티가 없으면 0으로 계산
+        int remainingMileageTime = mileageRepository.findByMemberAndCafe(member, cafe)
+                .map(Mileage::getPoint)
+                .orElse(0);
+
         int returnTime = remainingMileageTime + time;
         String message = "time:" + returnTime;
 
