@@ -29,5 +29,12 @@ spring:
             authorization-grant-type: authorization_code
             client-name: Google
 
+
 jwt:
   secret: ThisIsA_VeryLongAndSecureSecretKeyForJwtTEST_YouShouldChange
+
+mqtt:
+  broker: ssl://75061fd0c9b94d79a3e6f99ea2f4055b.s1.eu.hivemq.cloud:8883
+  username: NodeMCU
+  password: Cc011184
+  client-id: spring-mqtt-client
