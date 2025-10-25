@@ -26,7 +26,14 @@ spring:
 
 jwt:
   secret: "${JWT_SECRET}"
+
 # [추가] 카카오 API 설정
 kakao:
   api:
     key: "${KAKAO_API_KEY}" # 실제 키 대신 .env 파일의 변수 이름을 사용
+
+mqtt:
+  broker: ssl://75061fd0c9b94d79a3e6f99ea2f4055b.s1.eu.hivemq.cloud:8883
+  username: "${MQTT_USERNAME}"
+  password: "${MQTT_PASSWORD}"
+  client-id: spring-mqtt-client
