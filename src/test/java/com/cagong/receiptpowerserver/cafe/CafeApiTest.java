@@ -73,6 +73,7 @@ public class CafeApiTest {
                         .getString("accessToken");
 
         authorizationValue = "Bearer " + accessToken;
+        System.out.println("accessToken = " + accessToken); // 토큰 나오나 테스트
     }
 
     @Test
@@ -156,4 +157,5 @@ public class CafeApiTest {
                 .then()
                 .statusCode(204);
     }
+
 }

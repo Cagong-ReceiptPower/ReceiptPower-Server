@@ -6,12 +6,17 @@ import lombok.Getter;
 @Getter
 public class MemberLoginResponse {
 
-    private final Long id;
-    private final String email;
-    private final String username;
-    private final String accessToken;
-    private final String tokenType;
-    private final String message;
+    private Long id;
+    private String email;
+    private String username;
+    private String accessToken;
+    private String tokenType;
+    private String message;
+
+    public MemberLoginResponse() {
+        this.tokenType = "Bearer";
+        this.message = "로그인이 성공적으로 완료되었습니다.";
+    }
 
     public MemberLoginResponse(Member member, String accessToken) {
         this.id = member.getId();

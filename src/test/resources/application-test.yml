@@ -1,4 +1,13 @@
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 'dummy-google-client-id'
+            client-secret: 'dummy-google-client-secret'
+            redirect-uri: 'http://localhost:8080/login/oauth2/code/google'
+
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
@@ -15,3 +24,12 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+# spring과 같은 레벨로 들여쓰기 없음
+jwt:
+  secret: 'this-is-a-super-secret-key-for-testing-12345' #테스트용
+
+# spring과 같은 레벨로 들여쓰기 없음
+kakao:
+  api:
+    key: 'dummy-kakao-api-key-for-testing' #테스트용

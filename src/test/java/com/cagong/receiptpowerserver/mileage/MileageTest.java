@@ -14,6 +14,7 @@ import com.cagong.receiptpowerserver.domain.mileage.dto.CafeMileageResponse;
 import com.cagong.receiptpowerserver.domain.mileage.dto.EndMileageUsageResponse;
 import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageRequest;
 import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageResponse;
+import com.cagong.receiptpowerserver.global.jwt.JwtUtil;
 import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
@@ -35,6 +36,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -160,6 +162,7 @@ public class MileageTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("마일리지 저장 및 조회 테스트")
     void 마일리지_저장_및_조회_테스트() {
         // Given - 테스트 데이터 준비
@@ -230,6 +233,7 @@ public class MileageTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("마일리지 엔티티 연관관계 테스트")
     void 마일리지_엔티티_연관관계_테스트() {
         // Given

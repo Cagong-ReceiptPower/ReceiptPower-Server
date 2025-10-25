@@ -33,6 +33,25 @@
         <div class="form-group"><input type="text" id="login-email" placeholder="이메일 또는 사용자명"></div>
         <div class="form-group"><input type="password" id="login-password" placeholder="비밀번호"></div>
         <button onclick="login()">로그인</button>
+        <button onclick="showSignupView()">회원가입</button>
+    </div>
+
+    <div id="signup-view" class="view">
+        <h2>회원가입</h2>
+        <div class="form-group">
+            <label for="signup-username">사용자명</label>
+            <input type="text" id="signup-username" placeholder="Username">
+        </div>
+        <div class="form-group">
+            <label for="signup-email">이메일</label>
+            <input type="text" id="signup-email" placeholder="Email">
+        </div>
+        <div class="form-group">
+            <label for="signup-password">비밀번호</label>
+            <input type="password" id="signup-password" placeholder="Password">
+        </div>
+        <button onclick="signup()">가입하기</button>
+        <button onclick="showView('login-view')">로그인으로 돌아가기</button>
     </div>
 
     <div id="map-view" class="view">
@@ -80,6 +99,45 @@
     function showView(viewId) {
         document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
         document.getElementById(viewId).style.display = 'block';
+    }
+
+    // 회원가입 뷰를 보여주는 함수
+    function showSignupView() {
+        showView('signup-view');
+    }
+
+    // 0. 회원가입 기능
+    async function signup() {
+        const username = document.getElementById('signup-username').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+
+        if (!username || !email || !password) {
+            alert('모든 항목을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/members/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            // 서버에서 오는 에러 메시지를 받기 위한 처리
+            if (!response.ok) {
+                // 서버에서 JSON 형태의 에러 메시지를 보낸다면 아래와 같이 처리 가능
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || '회원가입에 실패했습니다. (아이디/이메일 중복 등)');
+            }
+
+            const data = await response.json();
+            alert(data.message || '회원가입 성공! 이제 로그인 해주세요.');
+            showView('login-view'); // 성공 시 로그인 뷰로 전환
+
+        } catch (error) {
+            alert(error.message);
+        }
     }
 
     // 1. 로그인
