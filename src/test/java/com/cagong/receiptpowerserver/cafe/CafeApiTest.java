@@ -16,6 +16,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
+import javax.management.relation.Role;
+
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
@@ -51,6 +53,7 @@ public class CafeApiTest {
                 .username("테스터1")
                 .email("mileage123@test.com")
                 .password(passwordEncoder.encode("password123"))
+                .role(Role.USER)
                 .build();
         memberRepository.save(member);
 
@@ -89,7 +92,7 @@ public class CafeApiTest {
         given()
                 .header("Authorization", authorizationValue)
                 .when()
-                .get("/cafes/all")
+                .get("/api/cafes/all") // <-- /api 추가
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -112,7 +115,7 @@ public class CafeApiTest {
         given()
                 .header("Authorization", authorizationValue)
                 .when()
-                .get("/cafes/{cafeId}", cafeId)
+                .get("/api/cafes/{cafeId}", cafeId)
                 .then()
                 .statusCode(200);
     }
@@ -132,7 +135,7 @@ public class CafeApiTest {
                 .contentType(ContentType.JSON)
                 .body(request)
                 .when()
-                .post("/cafes")
+                .post("/api/cafes")
                 .then()
                 .statusCode(201);
     }
@@ -153,7 +156,7 @@ public class CafeApiTest {
         given()
                 .header("Authorization", authorizationValue)
                 .when()
-                .delete("/cafes/{cafeId}", cafeId)
+                .delete("/api/cafes/{cafeId}", cafeId)
                 .then()
                 .statusCode(204);
     }
