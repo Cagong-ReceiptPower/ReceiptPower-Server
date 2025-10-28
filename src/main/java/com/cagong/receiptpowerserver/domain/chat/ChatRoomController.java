@@ -80,7 +80,7 @@ public class ChatRoomController {
 
         // [수정된 부분]: CustomUserDetails 타입인지 확인하고 ID를 직접 추출
         if (principal instanceof CustomUserDetails customUserDetails) {
-            return customUserDetails.getId();
+            return customUserDetails.getMember().getId();
         }
 
         // --- 이하 코드는 기존 코드의 안전 장치로 사용됩니다 ---

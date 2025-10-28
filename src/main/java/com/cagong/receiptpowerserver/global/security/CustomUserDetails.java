@@ -1,5 +1,3 @@
-// global/security/CustomUserDetails.java
-
 package com.cagong.receiptpowerserver.global.security;
 
 import com.cagong.receiptpowerserver.domain.member.Member;
@@ -9,36 +7,39 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections; // List 대신 Collections 사용
 
 @Getter
 public class CustomUserDetails implements UserDetails {
 
-    private final Long id;
-    private final String email;
-    private final String password;
-    private final String username; // [추가] 사용자 이름을 저장할 필드
+    private final Member member; // [수정] Member 객체를 통째로 저장합니다.
 
     public CustomUserDetails(Member member) {
-        this.id = member.getId();
-        this.email = member.getEmail();
-        this.password = member.getPassword();
-        this.username = member.getUsername(); // [추가] member 객체로부터 username을 가져와 저장
+        this.member = member;
     }
 
+    // --- 최종 수정 ---
+    // JWT 토큰 주체와 loadUserByUsername 파라미터를 "이메일"로 통일
     @Override
     public String getUsername() {
-        // [수정] ID 대신 실제 사용자 이름을 반환하도록 변경
-        return username;
+        return member.getEmail();
     }
 
-    // ... 나머지 코드는 그대로 ...
+    // --- 동적 권한 ---
+    // member 객체에서 실제 Role을 꺼내 동적으로 권한 부여
     @Override
-    public String getPassword() { return password; }
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(
+                new SimpleGrantedAuthority(member.getRole().getKey())
+        );
+    }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(new SimpleGrantedAuthority("ROLE_USER")); }
+    public String getPassword() {
+        return member.getPassword();
+    }
 
+    // ... (나머지 4개 메서드는 true로 동일) ...
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }

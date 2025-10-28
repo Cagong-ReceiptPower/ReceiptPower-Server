@@ -3,6 +3,7 @@
 
 package com.cagong.receiptpowerserver.domain.cafe;
 
+import com.cagong.receiptpowerserver.domain.cafe.dto.CafeRequest;
 import com.cagong.receiptpowerserver.domain.chat.ChatRoomService;
 import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomResponse;
 import com.cagong.receiptpowerserver.domain.cafe.dto.CafeWithChatRoomsResponse;
@@ -24,6 +25,50 @@ public class CafeService {
 
     @Value("${kakao.api.key}")
     private String kakaoApiKey;
+
+    /**
+     * 1. 카페 생성 (POST /api/cafes)
+     */
+    @Transactional
+    public Long saveCafe(CafeRequest request) {
+        Cafe cafe = Cafe.builder()
+                .name(request.getCafeName()) // ❗️ [수정] .getCafeName()
+                .address(request.getAddress())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .phoneNumber(request.getPhoneNumber())
+                .build();
+
+        Cafe savedCafe = cafeRepository.save(cafe);
+        return savedCafe.getId();
+    }
+
+    /**
+     * 2. 카페 전체 조회 (GET /api/cafes/all)
+     */
+    @Transactional(readOnly = true)
+    public List<Cafe> findAllCafes() {
+        return cafeRepository.findAll();
+    }
+
+    /**
+     * 3. 카페 ID로 1건 조회 (GET /api/cafes/{cafeId})
+     */
+    @Transactional(readOnly = true)
+    public Cafe findCafeById(Long cafeId) {
+        return cafeRepository.findById(cafeId)
+                .orElseThrow(() -> new RuntimeException("해당 ID의 카페를 찾을 수 없습니다: " + cafeId));
+    }
+
+    /**
+     * 4. 카페 삭제 (DELETE /api/cafes/{cafeId})
+     */
+    @Transactional
+    public void deleteCafeById(Long cafeId) {
+        Cafe cafe = cafeRepository.findById(cafeId)
+                .orElseThrow(() -> new RuntimeException("해당 ID의 카페를 찾을 수 없습니다: " + cafeId));
+        cafeRepository.delete(cafe);
+    }
 
     // [수정] 메서드 이름과 파라미터 변경
     @Transactional

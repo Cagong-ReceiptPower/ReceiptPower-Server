@@ -33,6 +33,11 @@ public class Cafe {
     @Builder
     public Cafe(String kakaoPlaceId, String name, double latitude, double longitude, String address, String phoneNumber) {
         this.kakaoPlaceId = kakaoPlaceId;
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
     }
 
     public void updateFrom(CafeRequest request) {

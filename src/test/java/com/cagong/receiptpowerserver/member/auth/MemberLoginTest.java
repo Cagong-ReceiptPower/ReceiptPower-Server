@@ -1,5 +1,6 @@
 package com.cagong.receiptpowerserver.member.auth;
 
+import com.cagong.receiptpowerserver.domain.member.MemberRepository;
 import com.cagong.receiptpowerserver.domain.member.MemberService;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberSignupRequest;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberLoginRequest;
@@ -21,8 +22,12 @@ public class MemberLoginTest {
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private MemberRepository memberRepository;
+
     @BeforeEach
     void setUp() {
+        memberRepository.deleteAll();
         // 테스트용 회원 생성
         MemberSignupRequest signupRequest = new MemberSignupRequest(
             "testuser", 

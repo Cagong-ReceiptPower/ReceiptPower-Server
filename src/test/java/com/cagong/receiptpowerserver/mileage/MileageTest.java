@@ -37,7 +37,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.cagong.receiptpowerserver.domain.member.Role;
 import java.util.List;
 
 import static io.restassured.RestAssured.*;
@@ -93,6 +93,7 @@ public class MileageTest {
                 .username("테스터1")
                 .email("mileage123@test.com")
                 .password(passwordEncoder.encode("password123"))
+                .role(Role.USER)
                 .build();
         memberRepository.save(member);
 /*
@@ -147,7 +148,8 @@ public class MileageTest {
         Member member = Member.builder()
                 .username(username)
                 .email(email)
-                .password("password123")
+                .password(passwordEncoder.encode("password123"))
+                .role(Role.USER)
                 .build();
         return memberRepository.save(member);
     }
@@ -162,39 +164,23 @@ public class MileageTest {
     }
 
     @Test
-    @Transactional
     @DisplayName("마일리지 저장 및 조회 테스트")
     void 마일리지_저장_및_조회_테스트() {
         // Given - 테스트 데이터 준비
-        Member savedMember = createTestMember("마일리지테스터", "mileage@test.com");
+        // Member savedMember = createTestMember("마일리지테스터", "mileage@test.com"); // ❗️ 이 줄 삭제! (setup에서 로그인한 유저 사용)
         Cafe savedCafe = createTestCafe("스타벅스 강남점", "서울시 강남구 역삼동", "02-1234-5678");
 
-        // When - 마일리지 저장
-        /*
-        Mileage mileage = Mileage.builder()
-                .point(1000)
-                .member(savedMember)
-                .cafe(savedCafe)
-                .build();
-        Mileage savedMileage = mileageRepository.save(mileage);
-        */
-        SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(),100);
-        mileageService.addMileage(request);
+        // When - 마일리지 저장 (setup에서 로그인한 유저 기준으로 적립됨)
+        SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(), 100);
+        SaveMileageResponse saveResponse = mileageService.addMileage(request); // 반환 타입이 있다면 받기 (없으면 void)
 
-        // Then - 검증
-        //Optional<Mileage> found = mileageRepository.findById(savedMileage.getId());
+        // Then - 검증 (setup에서 로그인한 유저 기준으로 조회됨)
         CafeMileageResponse response = mileageService.getCafeMileage(savedCafe.getId());
 
         Assertions.assertThat(response.getPoints()).isEqualTo(100);
-        /*
-        Assertions.assertThat(found).isPresent();
-        Assertions.assertThat(found.get().getPoint()).isEqualTo(1000);
-        
-        // 연관관계 검증을 위한 페치 조인 사용 또는 트랜잭션 내에서 접근
-        Assertions.assertThat(found.get().getMember().getUsername()).isEqualTo("마일리지테스터");
-        Assertions.assertThat(found.get().getCafe().getName()).isEqualTo("스타벅스 강남점");
-        */
-    }
+        Assertions.assertThat(response.getCafeId()).isEqualTo(savedCafe.getId()); // Cafe ID 검증 추가
+
+        }
 
     @Test
     @DisplayName("한 회원의 여러 마일리지 적립 테스트")
@@ -233,14 +219,14 @@ public class MileageTest {
     }
 
     @Test
-    @Transactional
     @DisplayName("마일리지 엔티티 연관관계 테스트")
     void 마일리지_엔티티_연관관계_테스트() {
         // Given
         Member member = Member.builder()
                 .username("연관관계테스터")
                 .email("relation@test.com")
-                .password("password123")
+                .password(passwordEncoder.encode("password123"))
+                .role(Role.USER)
                 .build();
         Member savedMember = memberRepository.save(member);
 

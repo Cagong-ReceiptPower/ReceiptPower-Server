@@ -34,6 +34,7 @@ public class MemberService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(encodedPassword)
+                .role(Role.USER)
                 .build();
         
         Member savedMember = memberRepository.save(member);
@@ -44,6 +45,7 @@ public class MemberService {
     //로그인
     @Transactional(readOnly = true)
     public MemberLoginResponse login(MemberLoginRequest request) {
+
         // 1. 사용자 찾기 (username 또는 email로)
         Member member = findMemberByUsernameOrEmail(request.getUsernameOrEmail());
         
