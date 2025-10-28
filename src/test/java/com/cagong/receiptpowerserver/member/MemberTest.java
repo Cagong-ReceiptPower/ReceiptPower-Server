@@ -2,7 +2,6 @@ package com.cagong.receiptpowerserver.member;
 
 import com.cagong.receiptpowerserver.domain.member.Member;
 import com.cagong.receiptpowerserver.domain.member.MemberRepository;
-import com.cagong.receiptpowerserver.domain.member.Role; // ❗️ 올바른 Role import 확인!
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +31,6 @@ public class MemberTest {
                 .username("testuser")
                 // ❗️ passwordEncoder 사용!
                 .password(passwordEncoder.encode("password123"))
-                .role(Role.USER) // <-- ❗️ 이 줄이 꼭 있어야 합니다!
                 .build();
         // ------------------------------------
 

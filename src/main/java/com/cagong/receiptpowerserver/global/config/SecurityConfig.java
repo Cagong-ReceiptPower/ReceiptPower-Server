@@ -32,9 +32,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
+                        .requestMatchers( "/","/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/chat.html", "/ws-stomp/**").permitAll()
-                        // --- ❗️ [수정됨] ---
-                        // 회원가입과 로그인 경로에서 "/api" 제거
                         .requestMatchers(HttpMethod.POST, "/members/signup", "/members/login").permitAll()
                         // ------------------
                         .requestMatchers(HttpMethod.GET, "/api/cafes/**").permitAll() // 카페 경로는 /api 유지 (CafeController와 일치 가정)

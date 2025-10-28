@@ -37,7 +37,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
-import com.cagong.receiptpowerserver.domain.member.Role;
 import java.util.List;
 
 import static io.restassured.RestAssured.*;
@@ -93,7 +92,6 @@ public class MileageTest {
                 .username("테스터1")
                 .email("mileage123@test.com")
                 .password(passwordEncoder.encode("password123"))
-                .role(Role.USER)
                 .build();
         memberRepository.save(member);
 /*
@@ -149,7 +147,6 @@ public class MileageTest {
                 .username(username)
                 .email(email)
                 .password(passwordEncoder.encode("password123"))
-                .role(Role.USER)
                 .build();
         return memberRepository.save(member);
     }
@@ -226,7 +223,6 @@ public class MileageTest {
                 .username("연관관계테스터")
                 .email("relation@test.com")
                 .password(passwordEncoder.encode("password123"))
-                .role(Role.USER)
                 .build();
         Member savedMember = memberRepository.save(member);
 
