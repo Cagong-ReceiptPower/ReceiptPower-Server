@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from PIL import Image, ImageEnhance
 import torch
 import torch.nn as nn
@@ -49,12 +49,7 @@ transform = transforms.Compose([
 ])
 
 # ----------------------------
-# 4️⃣ JSON 저장 경로
-# ----------------------------
-profile_json_path = Path(__file__).parent / "my_cafe_profile.json"
-
-# ----------------------------
-# 5️⃣ Augmentation 함수
+# 4️⃣ Augmentation 함수
 # ----------------------------
 def augment_image(image: Image.Image):
     # 좌우/상하 반전
@@ -75,10 +70,13 @@ def augment_image(image: Image.Image):
     return image
 
 # ----------------------------
-# 6️⃣ /register_profile : 3장 이상 업로드 + augmentation
+# 5️⃣ /register_profile : 3장 이상 업로드 + augmentation
 # ----------------------------
 @app.post("/register_profile")
-async def register_profile(files: list[UploadFile] = File(...)):
+async def register_profile(
+    cafe_name: str = Form(...),
+    files: list[UploadFile] = File(...)
+):
     if len(files) < 3:
         raise HTTPException(status_code=400, detail="최소 3장 이상의 이미지가 필요합니다.")
 
@@ -92,7 +90,7 @@ async def register_profile(files: list[UploadFile] = File(...)):
             img_tensor = transform(image).unsqueeze(0)
             embeddings.append(model(img_tensor).squeeze(0))
             
-            # augmentation 2~3번 적용
+            # augmentation 2번 적용
             for _ in range(2):
                 aug_img = augment_image(image)
                 aug_tensor = transform(aug_img).unsqueeze(0)
@@ -103,17 +101,25 @@ async def register_profile(files: list[UploadFile] = File(...)):
     mean_embedding_list = mean_embedding.tolist()
 
     # JSON 저장
+    profile_json_path = Path(__file__).parent / f"{cafe_name}_profile.json"
     with open(profile_json_path, "w") as f:
         json.dump({"mean_embedding": mean_embedding_list}, f)
 
-    return {"message": f"✅ {len(files)}장 + augmentation으로 평균 임베딩 저장 완료",
-            "json_path": str(profile_json_path)}
+    return {
+        "message": f"✅ {len(files)}장 + augmentation으로 평균 임베딩 저장 완료",
+        "json_path": str(profile_json_path)
+    }
 
 # ----------------------------
-# 7️⃣ /predict_receipt : 업로드된 단일 영수증 → 유사도 계산
+# 6️⃣ /predict_receipt : 단일 영수증 → 유사도 계산
 # ----------------------------
 @app.post("/predict_receipt")
-async def predict_receipt(file: UploadFile = File(...), threshold: float = 0.98):
+async def predict_receipt(
+    cafe_name: str = Form(...),
+    file: UploadFile = File(...),
+    threshold: float = 0.98
+):
+    profile_json_path = Path(__file__).parent / f"{cafe_name}_profile.json"
     if not profile_json_path.exists():
         raise HTTPException(status_code=400, detail="프로필이 등록되지 않았습니다. /register_profile 먼저 호출하세요.")
 
@@ -136,6 +142,6 @@ async def predict_receipt(file: UploadFile = File(...), threshold: float = 0.98)
 
     return {
         "similarity": round(similarity, 4),
-        "label": "my_cafe" if is_my_cafe else "other_cafe",
+        "label": cafe_name if is_my_cafe else "other_cafe",
         "threshold": threshold
     }
