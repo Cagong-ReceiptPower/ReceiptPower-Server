@@ -1,8 +1,60 @@
+### AI파트에서 필요한 파일은 이제 embedding_receipts.py, naver_ocr.py, receipt_embedding_model.pth 뿐입니다. 나머지는 이전 버전임.
+
 ## 설치해야하는 것
 1. pip install python-multipart
 이게 필요했습니다.
 
 실행 시 오류가 일어날 수도 있는데, 나머지는 오류메세지 보고 설치하면 될 것 같네요.
+<br />
+<br />
+<br />
+
+## embedding_receipts.py 파일 설명
+이 코드는 사전학습된 ResNet 기반 ReceiptEmbeddingModel을 이용하여, 업로드된 영수증 이미지를 카페 프로필 임베딩과 비교해 내 카페 영수증인지 판별하는 FastAPI 서버입니다.
+또한, 카페 프로필 등록 시 3장 이상의 영수증 이미지와 augmentation을 적용해 평균 임베딩을 생성하고 JSON 파일로 저장할 수 있습니다.
+
+### 주요 기능
+1. **카페 프로필 등록(/register_profile)**
+최소 3장 이상의 영수증 이미지 업로드 필요. 업로드된 각 이미지에 대해 데이터 증강까지 해서 이미지 임베딩 계산
+2. **영수증 판별(/predict_receipt)**
+단일 영수증 이미지 업로드. 등록된 카페 프로필(json)과 코사인 유사도 계산함. 임계값 이상이면 내 카페 영수증으로 판단함.
+
+### 동작 방식
+1. **클라이언트에서 프로필 등록**
+  * Flutter 앱 등에서 POST /register_profile 요청 시:
+    * cafe_name (Form)
+    * 최소 3장 이상의 이미지 파일 리스트 (files)
+  * 임베딩의 평균을 json 파일로 저장
+
+2. 단일 영수증 판별
+  * Flutter 앱 등에서 POST /predict_receipt 요청 시:
+    * cafe_name (Form, 등록 시와 동일)
+    * 단일 이미지 파일 (file)
+  * 서버는 업로드된 이미지 임베딩 계산
+  * json에 저장된 카페 프로필과 코사인 유사도 계산
+
+### 주의사항
+* /register_profile 호출 전에 카페별로 최소 3장 이상의 이미지 업로드 필요
+
+* JSON 파일 경로는 {cafe_name}_profile.json으로 자동 저장
+
+* 판별 시 /predict_receipt에서 동일한 cafe_name 사용 필요
+
+* 모델 파일 receipt_embedding_model.pth가 같은 디렉토리에 있어야 함
+
+
+<br />
+<br />
+<br />
+
+## receipt_embedding_model.pth 파일 설명
+
+* embedding_receipts.py에서 사용하는 사전학습된 ResNet 기반 모델 가중치 파일
+
+* 모델 구조와 가중치가 모두 포함되어 있음
+
+* 이 파일이 없으면 /register_profile이나 /predict_receipt 모두 실행 불가
+
 <br />
 <br />
 <br />
