@@ -117,7 +117,7 @@ async def register_profile(
 async def predict_receipt(
     cafe_name: str = Form(...),
     file: UploadFile = File(...),
-    threshold: float = 0.98
+    threshold: float = 0.981
 ):
     profile_json_path = Path(__file__).parent / f"{cafe_name}_profile.json"
     if not profile_json_path.exists():
