@@ -31,14 +31,15 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-
-                        .requestMatchers( "/","/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/chat.html", "/ws-stomp/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/members/signup", "/members/login").permitAll()
-                        // ------------------
-                        .requestMatchers(HttpMethod.GET, "/api/cafes/**").permitAll() // 카페 경로는 /api 유지 (CafeController와 일치 가정)
-                        .requestMatchers(HttpMethod.GET, "/api/chat-rooms/**").permitAll() // 채팅방 경로는 /api 유지 (ChatRoomController와 일치 가정)
-                        .anyRequest().authenticated()
+                                .anyRequest().permitAll()
+//
+//                        .requestMatchers( "/","/swagger-ui/**", "/v3/api-docs/**").permitAll()
+//                        .requestMatchers("/chat.html", "/ws-stomp/**").permitAll()
+//                        .requestMatchers(HttpMethod.POST, "/members/signup", "/members/login").permitAll()
+//                        // ------------------
+//                        .requestMatchers(HttpMethod.GET, "/api/cafes/**").permitAll() // 카페 경로는 /api 유지 (CafeController와 일치 가정)
+//                        .requestMatchers(HttpMethod.GET, "/api/chat-rooms/**").permitAll() // 채팅방 경로는 /api 유지 (ChatRoomController와 일치 가정)
+//                        .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.disable());
 
