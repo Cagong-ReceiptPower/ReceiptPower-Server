@@ -52,7 +52,6 @@ public class MemberSignupTest {
         Member savedMember = memberRepository.findById(response.getId()).orElse(null);
         assertThat(savedMember).isNotNull();
         assertThat(savedMember.getPassword()).isNotEqualTo("password123"); // 암호화 확인
-        assertThat(savedMember.getRole()).isEqualTo(com.cagong.receiptpowerserver.domain.member.Role.USER); // Role 확인 추가 (import 필요)
     }
 
     @Test

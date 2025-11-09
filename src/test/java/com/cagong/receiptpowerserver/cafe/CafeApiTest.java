@@ -6,7 +6,6 @@ import com.cagong.receiptpowerserver.domain.cafe.dto.CafeRequest;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import com.cagong.receiptpowerserver.domain.member.MemberRepository;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberLoginRequest;
-import com.cagong.receiptpowerserver.domain.member.Role; // ✅ 올바른 Role Enum import 확인
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +55,6 @@ public class CafeApiTest {
                 .username("테스터1")
                 .email("mileage123@test.com")
                 .password(passwordEncoder.encode("password123"))
-                .role(Role.USER) // ✅ Role 설정 확인
                 .build();
         memberRepository.save(member);
 

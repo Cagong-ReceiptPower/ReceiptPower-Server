@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections; // List 대신 Collections 사용
+import java.util.List;
 
 @Getter
 public class CustomUserDetails implements UserDetails {
@@ -29,9 +30,7 @@ public class CustomUserDetails implements UserDetails {
     // member 객체에서 실제 Role을 꺼내 동적으로 권한 부여
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(
-                new SimpleGrantedAuthority(member.getRole().getKey())
-        );
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     @Override

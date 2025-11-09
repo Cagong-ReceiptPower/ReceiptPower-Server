@@ -21,15 +21,10 @@ public class Member {
     @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING) // DB에 Role 타입을 문자열로 저장
-    @Column(nullable = false)
-    private Role role;
-
     @Builder
-    public  Member(String username, String email, String password, Role role){
+    public  Member(String username, String email, String password){
         this.username = username;
         this.email = email;
         this.password = password;
-        this.role = role;
     }
 }

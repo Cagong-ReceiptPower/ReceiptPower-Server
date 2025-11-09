@@ -34,7 +34,6 @@ public class MemberService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(encodedPassword)
-                .role(Role.USER)
                 .build();
         
         Member savedMember = memberRepository.save(member);
