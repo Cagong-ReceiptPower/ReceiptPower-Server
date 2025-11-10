@@ -5,7 +5,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
-@Profile("!test")
+
 @Slf4j
 @Service
 public class MqttPublisher {

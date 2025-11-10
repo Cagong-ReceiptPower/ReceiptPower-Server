@@ -19,8 +19,17 @@ public class MqttService {
     private final MileageRepository mileageRepository;
     private final MemberRepository memberRepository;
     private final CafeRepository cafeRepository;
+    private final MqttPublisher publisher;
 
-    public String getTimerMessage(Long cafeId, int time){
+    public void turnOn(){
+        publisher.publishCommand("mycafe/relay/control", "on");
+    }
+
+    public void turnOff(){
+        publisher.publishCommand("mycafe/relay/control", "off");
+    }
+
+    public String startTimer(Long cafeId, int time){
         Long memberId = MemberUtil.getCurrentMember();
 
         Member member = memberRepository.findById(memberId)
@@ -29,13 +38,9 @@ public class MqttService {
         Cafe cafe = cafeRepository.findById(cafeId)
                 .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
-        // Mileage 엔티티가 없으면 0으로 계산
-        int remainingMileageTime = mileageRepository.findByMemberAndCafe(member, cafe)
-                .map(Mileage::getPoint)
-                .orElse(0);
+        String message = "time:" + time;
 
-        int returnTime = remainingMileageTime + time;
-        String message = "time:" + returnTime;
+        publisher.publishCommand("mycafe/relay/control", message);
 
         return message;
     }

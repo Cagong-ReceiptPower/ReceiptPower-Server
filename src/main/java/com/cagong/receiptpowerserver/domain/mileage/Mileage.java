@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -46,6 +48,7 @@ public class Mileage extends BaseEntity {
         this.point += pointsToAdd;
     }
 
+    @Transactional
     public void startUsage() {
         if (this.point <= 0) {
             throw new IllegalStateException("마일리지가 부족하여 사용할 수 없습니다.");

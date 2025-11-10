@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Profile("!test")
+
 @RestController
 @RequestMapping("/device")
 @RequiredArgsConstructor
@@ -18,20 +18,19 @@ public class MqttController {
 
     @PostMapping("/on")
     public String turnOn() {
-        publisher.publishCommand("mycafe/relay/control", "on");
+        mqttService.turnOn();
         return "Sent ON command";
     }
 
     @PostMapping("/off")
     public String turnOff() {
-        publisher.publishCommand("mycafe/relay/control", "off");
+        mqttService.turnOff();
         return "Sent OFF command";
     }
 
     @PostMapping("/time")
     public String setTimer(@RequestParam Long cafeId, int time) {
-        String message = mqttService.getTimerMessage(cafeId, time);
-        publisher.publishCommand("mycafe/relay/control", message);
-        return "Timer set";
+        String message = mqttService.startTimer(cafeId, time);
+        return "Timer set " + message;
     }
 }

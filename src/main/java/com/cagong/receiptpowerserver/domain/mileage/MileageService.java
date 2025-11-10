@@ -5,12 +5,15 @@ import com.cagong.receiptpowerserver.domain.cafe.CafeRepository;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import com.cagong.receiptpowerserver.domain.member.MemberRepository;
 import com.cagong.receiptpowerserver.domain.mileage.dto.*;
+import com.cagong.receiptpowerserver.domain.mqtt.MqttService;
 import com.cagong.receiptpowerserver.global.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,9 +23,11 @@ public class MileageService {
     private final MileageRepository mileageRepository;
     private final CafeRepository cafeRepository;
     private final MemberRepository memberRepository;
+    private final MqttService mqttService;
 
     public TotalMileageResponse getTotalMileage(){
         Long memberId = MemberUtil.getCurrentMember();
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
@@ -35,16 +40,19 @@ public class MileageService {
 
     public CafeMileageResponse getCafeMileage(Long cafeId){
         Long memberId = MemberUtil.getCurrentMember();
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
         Cafe cafe = cafeRepository.findById(cafeId)
                 .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
-        Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
-                .orElseThrow(() -> new RuntimeException());
+        Optional<Mileage> optMileage = mileageRepository.findByMemberAndCafe(member, cafe);
 
-        CafeMileageResponse response = new CafeMileageResponse(cafeId, cafe.getName(), mileage.getPoint(), mileage.getUpdatedAt());
+        int mileagePoint = optMileage.map(Mileage::getPoint).orElse(0);
+        LocalDateTime mileageUpdatedAt = optMileage.map(Mileage::getUpdatedAt).orElse(null);
+
+        CafeMileageResponse response = new CafeMileageResponse(cafeId, cafe.getName(), mileagePoint, mileageUpdatedAt);
         return response;
     }
 
@@ -57,7 +65,7 @@ public class MileageService {
         Cafe cafe = cafeRepository.findById(request.getCafeId())
                 .orElseThrow(() -> new RuntimeException("카페를 찾을 수 없습니다."));
 
-        int pointsToAdd = request.getRemainingTime();
+        int pointsToAdd = request.getAmount()/25;
 
         Mileage mileage = mileageRepository.findByMemberAndCafe(member, cafe)
                 .map(m -> {
@@ -76,8 +84,9 @@ public class MileageService {
     }
 
     @Transactional
-    public void startMileageUsage(Long cafeId){
+    public UseMileageResponse startMileageUsage(Long cafeId){
         Long memberId = MemberUtil.getCurrentMember();
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
@@ -92,11 +101,18 @@ public class MileageService {
         } catch (IllegalStateException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
+
+        int remainingPoint = mileage.getPoint();
+
+        mqttService.turnOn();
+        mqttService.startTimer(cafe.getId(), remainingPoint);
+        return new UseMileageResponse(remainingPoint, mileage.getUsageStartTime());
     }
 
     @Transactional
     public EndMileageUsageResponse endMileageUsage(Long cafeId){
         Long memberId = MemberUtil.getCurrentMember();
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new RuntimeException("회원을 찾을 수 없습니다."));
 
@@ -108,6 +124,8 @@ public class MileageService {
 
         int remainingMileage = mileage.endUsage();
         EndMileageUsageResponse response = new EndMileageUsageResponse(remainingMileage);
+
+        mqttService.turnOff();
         return response;
     }
 }

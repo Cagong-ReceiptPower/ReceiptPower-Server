@@ -14,6 +14,8 @@ import com.cagong.receiptpowerserver.domain.mileage.dto.CafeMileageResponse;
 import com.cagong.receiptpowerserver.domain.mileage.dto.EndMileageUsageResponse;
 import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageRequest;
 import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageResponse;
+import com.cagong.receiptpowerserver.domain.mqtt.MqttPublisher;
+import com.cagong.receiptpowerserver.domain.mqtt.MqttService;
 import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -48,6 +51,12 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 //@Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class MileageTest {
+
+    @MockBean
+    private MqttPublisher mqttPublisher;
+
+    @MockBean
+    private MqttService mqttService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -175,14 +184,14 @@ public class MileageTest {
                 .build();
         Mileage savedMileage = mileageRepository.save(mileage);
         */
-        SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(),100);
+        SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(),3000);
         mileageService.addMileage(request);
 
         // Then - 검증
         //Optional<Mileage> found = mileageRepository.findById(savedMileage.getId());
         CafeMileageResponse response = mileageService.getCafeMileage(savedCafe.getId());
 
-        Assertions.assertThat(response.getPoints()).isEqualTo(100);
+        Assertions.assertThat(response.getPoints()).isEqualTo(120);
         /*
         Assertions.assertThat(found).isPresent();
         Assertions.assertThat(found.get().getPoint()).isEqualTo(1000);
@@ -337,7 +346,7 @@ public class MileageTest {
                 .build();
         cafeRepository.save(cafe);
 
-        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 100);
+        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 3000);
 
         given().
                 header(AUTHORIZATION, authorizationValue).
@@ -360,7 +369,7 @@ public class MileageTest {
                 .as(CafeMileageResponse.class);
 
         assertThat(response.getCafeId()).isEqualTo(cafe.getId());
-        assertThat(response.getPoints()).isEqualTo(100);
+        assertThat(response.getPoints()).isEqualTo(120);
     }
 
     @Test

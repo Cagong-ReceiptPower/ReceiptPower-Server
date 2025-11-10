@@ -9,6 +9,6 @@ import java.util.List;
 @AllArgsConstructor
 public class TotalMileageResponse {
     private String username;
-    private int totalMileage;
+    private int totalMileagePoints;
     private List<CafeMileageDto> cafeMileageList;
 }
