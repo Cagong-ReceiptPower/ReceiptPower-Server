@@ -1,6 +1,7 @@
 package com.cagong.receiptpowerserver.domain.cafe;
 
 import com.cagong.receiptpowerserver.domain.cafe.dto.CafeRequest;
+import com.cagong.receiptpowerserver.domain.cafe.dto.CafeUpdateRequest;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -46,5 +47,23 @@ public class Cafe {
         this.latitude = request.getLatitude();
         this.longitude = request.getLongitude();
         this.phoneNumber = request.getPhoneNumber();
+    }
+
+    public void update(CafeUpdateRequest request) {
+        if (request.getCafeName() != null) {
+            this.name = request.getCafeName();
+        }
+        if (request.getAddress() != null) {
+            this.address = request.getAddress();
+        }
+        if (request.getLatitude() != null) {
+            this.latitude = request.getLatitude();
+        }
+        if (request.getLongitude() != null) {
+            this.longitude = request.getLongitude();
+        }
+        if (request.getPhoneNumber() != null) {
+            this.phoneNumber = request.getPhoneNumber();
+        }
     }
 }

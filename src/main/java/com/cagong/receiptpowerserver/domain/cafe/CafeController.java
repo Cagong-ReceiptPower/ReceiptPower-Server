@@ -1,6 +1,8 @@
 package com.cagong.receiptpowerserver.domain.cafe;
 
 import com.cagong.receiptpowerserver.domain.cafe.dto.CafeRequest;
+import com.cagong.receiptpowerserver.domain.cafe.dto.CafeResponse;
+import com.cagong.receiptpowerserver.domain.cafe.dto.CafeUpdateRequest;
 import com.cagong.receiptpowerserver.domain.cafe.dto.CafeWithChatRoomsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,8 +33,8 @@ public class CafeController {
      * 2. 카페 전체 조회 (GET /api/cafes/all)
      */
     @GetMapping("/all")
-    public ResponseEntity<List<Cafe>> getAllCafes() {
-        List<Cafe> cafes = cafeService.findAllCafes();
+    public ResponseEntity<List<CafeResponse>> getAllCafes() {
+        List<CafeResponse> cafes = cafeService.findAllCafes();
         return ResponseEntity.ok(cafes);
     }
 
@@ -40,8 +42,8 @@ public class CafeController {
      * 3. 카페 ID로 1건 조회 (GET /api/cafes/{cafeId})
      */
     @GetMapping("/{cafeId}")
-    public ResponseEntity<Cafe> getCafeById(@PathVariable Long cafeId) {
-        Cafe cafe = cafeService.findCafeById(cafeId);
+    public ResponseEntity<CafeResponse> getCafeById(@PathVariable Long cafeId) {
+        CafeResponse cafe = cafeService.findCafeById(cafeId);
         return ResponseEntity.ok(cafe);
     }
 
@@ -54,8 +56,17 @@ public class CafeController {
         return ResponseEntity.noContent().build(); // 204 No Content
     }
 
-    // --- ❗️ [여기까지 추가] ---
+    @PatchMapping("/{cafeId}")
+    public ResponseEntity<CafeResponse> updateCafe(
+            @PathVariable Long cafeId,
+            @RequestBody CafeUpdateRequest request) {
 
+        // 서비스의 updateCafe 메서드를 호출
+        CafeResponse updatedCafe = cafeService.updateCafe(cafeId, request);
+
+        // 수정된 정보(updatedCafe)를 클라이언트에게 200 OK와 함께 반환
+        return ResponseEntity.ok(updatedCafe);
+    }
 
     // [수정] kakaoPlaceId 대신 query(검색어)를 받도록 변경 (기존 코드)
     @GetMapping("/details")

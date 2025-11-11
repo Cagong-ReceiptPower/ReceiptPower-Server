@@ -17,6 +17,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
@@ -47,20 +48,17 @@ public class ChatRoomService {
     }
 
     // [추가] 특정 카페에 속한 채팅방 목록을 조회하는 서비스 메서드
-    @Transactional(readOnly = true)
     public List<ChatRoomResponse> getRoomsByCafe(Long cafeId) {
         return chatRoomRepository.findByCafeIdAndStatus(cafeId, ChatRoomStatus.ACTIVE)
                 .stream().map(this::toResponse).toList();
     }
 
-    @Transactional(readOnly = true)
     public ChatRoomResponse getById(Long id) {
         ChatRoom room = chatRoomRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("chat room not found: " + id));
         return toResponse(room);
     }
 
-    @Transactional(readOnly = true)
     public List<ChatRoomResponse> getMyRooms(Long authenticatedUserId) {
         Member creator = memberRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new NotFoundException("creator not found: " + authenticatedUserId));

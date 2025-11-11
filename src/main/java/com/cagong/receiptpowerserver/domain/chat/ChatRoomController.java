@@ -16,13 +16,13 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/chatrooms")
 @RequiredArgsConstructor
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
 
-    @PostMapping("/chat-rooms")
+    @PostMapping
     public ResponseEntity<ChatRoomResponse> create(
             @Valid @RequestBody ChatRoomCreateRequest request,
             Authentication authentication
@@ -40,7 +40,7 @@ public class ChatRoomController {
     }
 
     // [추가] 특정 카페의 모든 채팅방을 조회하는 API
-    @GetMapping("/cafes/{cafeId}/chat-rooms")
+    @GetMapping("/cafes/{cafeId}")
     public ResponseEntity<List<ChatRoomResponse>> getRoomsByCafe(@PathVariable Long cafeId) {
         return ResponseEntity.ok(chatRoomService.getRoomsByCafe(cafeId));
     }

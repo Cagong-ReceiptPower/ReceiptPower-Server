@@ -4,6 +4,8 @@
 package com.cagong.receiptpowerserver.domain.cafe;
 
 import com.cagong.receiptpowerserver.domain.cafe.dto.CafeRequest;
+import com.cagong.receiptpowerserver.domain.cafe.dto.CafeUpdateRequest;
+import com.cagong.receiptpowerserver.domain.cafe.dto.CafeResponse;
 import com.cagong.receiptpowerserver.domain.chat.ChatRoomService;
 import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomResponse;
 import com.cagong.receiptpowerserver.domain.cafe.dto.CafeWithChatRoomsResponse;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,17 +50,20 @@ public class CafeService {
      * 2. 카페 전체 조회 (GET /api/cafes/all)
      */
     @Transactional(readOnly = true)
-    public List<Cafe> findAllCafes() {
-        return cafeRepository.findAll();
+    public List<CafeResponse> findAllCafes() {
+        return cafeRepository.findAll().stream()
+                .map(CafeResponse::new)
+                .collect(Collectors.toList());
     }
 
     /**
      * 3. 카페 ID로 1건 조회 (GET /api/cafes/{cafeId})
      */
     @Transactional(readOnly = true)
-    public Cafe findCafeById(Long cafeId) {
-        return cafeRepository.findById(cafeId)
-                .orElseThrow(() -> new RuntimeException("해당 ID의 카페를 찾을 수 없습니다: " + cafeId));
+    public CafeResponse findCafeById(Long cafeId) {
+        Cafe cafe = cafeRepository.findById(cafeId)
+                .orElseThrow(() -> new RuntimeException("해당 ID의 카페를 조회할 수 없습니다:" + cafeId));
+        return new CafeResponse(cafe);
     }
 
     /**
@@ -70,7 +76,25 @@ public class CafeService {
         cafeRepository.delete(cafe);
     }
 
-    // [수정] 메서드 이름과 파라미터 변경
+    /**
+    * 5. 카페 수정
+     * */
+    @Transactional // (readOnly = false. DB를 수정합니다.)
+    public CafeResponse updateCafe(Long cafeId, CafeUpdateRequest request) {
+
+        // 1. DB에서 카페 Entity를 조회 (JPA가 영속성 컨텍스트에서 관리 시작)
+        Cafe cafe = cafeRepository.findById(cafeId)
+                .orElseThrow(() -> new RuntimeException("해당 ID의 카페를 찾을 수 없습니다: " + cafeId));
+        return new CafeResponse(
+                cafe.getId(),
+                cafe.getName(),
+                cafe.getAddress(),
+                cafe.getLatitude(),
+                cafe.getLongitude(),
+                cafe.getPhoneNumber()
+        );
+    }
+
     @Transactional
     public CafeWithChatRoomsResponse findOrCreateCafeByQueryAndGetDetails(String query) {
         // 1. 카카오 API를 호출하여 검색어에 해당하는 장소 정보를 가져옵니다.
@@ -99,7 +123,6 @@ public class CafeService {
         return new CafeWithChatRoomsResponse(cafe, chatRooms);
     }
 
-    // [수정] 파라미터를 query로 변경
     private Map<String, Object> callKakaoPlaceSearchApi(String query) {
         String url = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" + query;
         HttpHeaders headers = new HttpHeaders();

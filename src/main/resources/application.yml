@@ -26,6 +26,7 @@ spring:
 
 jwt:
   secret: "${JWT_SECRET}"
+  expiration: "${JWT_EXPIRATION}"
 
 # [추가] 카카오 API 설정
 kakao:
