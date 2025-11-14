@@ -7,11 +7,11 @@ import lombok.Getter;
 public class CafeMileageDto {
     private Long cafeId;
     private String cafeName;
-    private Long totalPoints;
+    private Long points;
 
-    public CafeMileageDto(Long cafeId, String cafeName, Long totalPoints) {
+    public CafeMileageDto(Long cafeId, String cafeName, Long points) {
         this.cafeId = cafeId;
         this.cafeName = cafeName;
-        this.totalPoints = totalPoints;
+        this.points = points;
     }
 }

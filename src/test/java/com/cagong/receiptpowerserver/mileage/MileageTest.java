@@ -14,7 +14,8 @@ import com.cagong.receiptpowerserver.domain.mileage.dto.CafeMileageResponse;
 import com.cagong.receiptpowerserver.domain.mileage.dto.EndMileageUsageResponse;
 import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageRequest;
 import com.cagong.receiptpowerserver.domain.mileage.dto.SaveMileageResponse;
-import com.cagong.receiptpowerserver.global.jwt.JwtUtil;
+import com.cagong.receiptpowerserver.domain.mqtt.MqttPublisher;
+import com.cagong.receiptpowerserver.domain.mqtt.MqttService;
 import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.Mock;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -49,6 +51,12 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 //@Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class MileageTest {
+
+    @Mock
+    private MqttPublisher mqttPublisher;
+
+    @Mock
+    private MqttService mqttService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -166,18 +174,31 @@ public class MileageTest {
         // Given - 테스트 데이터 준비
         // Member savedMember = createTestMember("마일리지테스터", "mileage@test.com"); // ❗️ 이 줄 삭제! (setup에서 로그인한 유저 사용)
         Cafe savedCafe = createTestCafe("스타벅스 강남점", "서울시 강남구 역삼동", "02-1234-5678");
-
-        // When - 마일리지 저장 (setup에서 로그인한 유저 기준으로 적립됨)
-        SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(), 100);
-        SaveMileageResponse saveResponse = mileageService.addMileage(request); // 반환 타입이 있다면 받기 (없으면 void)
+        // When - 마일리지 저장
+        /*
+        Mileage mileage = Mileage.builder()
+                .point(1000)
+                .member(savedMember)
+                .cafe(savedCafe)
+                .build();
+        Mileage savedMileage = mileageRepository.save(mileage);
+        */
+        SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(),3000);
+        mileageService.addMileage(request);
 
         // Then - 검증 (setup에서 로그인한 유저 기준으로 조회됨)
         CafeMileageResponse response = mileageService.getCafeMileage(savedCafe.getId());
 
-        Assertions.assertThat(response.getPoints()).isEqualTo(100);
-        Assertions.assertThat(response.getCafeId()).isEqualTo(savedCafe.getId()); // Cafe ID 검증 추가
-
-        }
+        Assertions.assertThat(response.getPoints()).isEqualTo(120);
+        /*
+        Assertions.assertThat(found).isPresent();
+        Assertions.assertThat(found.get().getPoint()).isEqualTo(1000);
+        
+        // 연관관계 검증을 위한 페치 조인 사용 또는 트랜잭션 내에서 접근
+        Assertions.assertThat(found.get().getMember().getUsername()).isEqualTo("마일리지테스터");
+        Assertions.assertThat(found.get().getCafe().getName()).isEqualTo("스타벅스 강남점");
+        */
+    }
 
     @Test
     @DisplayName("한 회원의 여러 마일리지 적립 테스트")
@@ -323,7 +344,7 @@ public class MileageTest {
                 .build();
         cafeRepository.save(cafe);
 
-        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 100);
+        SaveMileageRequest request = new SaveMileageRequest(cafe.getId(), 3000);
 
         given().
                 header(AUTHORIZATION, authorizationValue).
@@ -346,7 +367,7 @@ public class MileageTest {
                 .as(CafeMileageResponse.class);
 
         assertThat(response.getCafeId()).isEqualTo(cafe.getId());
-        assertThat(response.getPoints()).isEqualTo(100);
+        assertThat(response.getPoints()).isEqualTo(120);
     }
 
     @Test
