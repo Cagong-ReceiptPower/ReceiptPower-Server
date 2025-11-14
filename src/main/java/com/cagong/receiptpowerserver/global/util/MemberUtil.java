@@ -19,7 +19,7 @@ public class MemberUtil {
         }
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        return userDetails.getId();
+        return userDetails.getMember().getId();
     }
 
 }

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.Mock;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -38,7 +38,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static io.restassured.RestAssured.*;
@@ -52,10 +52,10 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class MileageTest {
 
-    @MockBean
+    @Mock
     private MqttPublisher mqttPublisher;
 
-    @MockBean
+    @Mock
     private MqttService mqttService;
 
     @Autowired
@@ -154,7 +154,7 @@ public class MileageTest {
         Member member = Member.builder()
                 .username(username)
                 .email(email)
-                .password("password123")
+                .password(passwordEncoder.encode("password123"))
                 .build();
         return memberRepository.save(member);
     }
@@ -172,9 +172,8 @@ public class MileageTest {
     @DisplayName("마일리지 저장 및 조회 테스트")
     void 마일리지_저장_및_조회_테스트() {
         // Given - 테스트 데이터 준비
-        Member savedMember = createTestMember("마일리지테스터", "mileage@test.com");
+        // Member savedMember = createTestMember("마일리지테스터", "mileage@test.com"); // ❗️ 이 줄 삭제! (setup에서 로그인한 유저 사용)
         Cafe savedCafe = createTestCafe("스타벅스 강남점", "서울시 강남구 역삼동", "02-1234-5678");
-
         // When - 마일리지 저장
         /*
         Mileage mileage = Mileage.builder()
@@ -187,8 +186,7 @@ public class MileageTest {
         SaveMileageRequest request = new SaveMileageRequest(savedCafe.getId(),3000);
         mileageService.addMileage(request);
 
-        // Then - 검증
-        //Optional<Mileage> found = mileageRepository.findById(savedMileage.getId());
+        // Then - 검증 (setup에서 로그인한 유저 기준으로 조회됨)
         CafeMileageResponse response = mileageService.getCafeMileage(savedCafe.getId());
 
         Assertions.assertThat(response.getPoints()).isEqualTo(120);
@@ -245,7 +243,7 @@ public class MileageTest {
         Member member = Member.builder()
                 .username("연관관계테스터")
                 .email("relation@test.com")
-                .password("password123")
+                .password(passwordEncoder.encode("password123"))
                 .build();
         Member savedMember = memberRepository.save(member);
 

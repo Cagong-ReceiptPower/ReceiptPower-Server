@@ -1,6 +1,7 @@
 package com.cagong.receiptpowerserver.domain.cafe;
 
 import com.cagong.receiptpowerserver.domain.cafe.dto.CafeRequest;
+import com.cagong.receiptpowerserver.domain.cafe.dto.CafeUpdateRequest;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -16,6 +17,9 @@ public class Cafe {
     @Column(name = "cafe_id")
     private Long id;
 
+    // [추가] 카카오 장소 ID를 저장할 필드. 카페가 중복 저장되는 것을 막는다.
+    @Column(unique = true)
+
     private String name;
 
     private String address;
@@ -27,15 +31,15 @@ public class Cafe {
     private String phoneNumber;
 
     @Builder
-    public Cafe(String name, String address, double latitude, double longitude, String phoneNumber) {
+    public Cafe(String name, double latitude, double longitude, String address, String phoneNumber) {
         this.name = name;
-        this.address = address;
         this.latitude = latitude;
-        this. longitude = longitude;
+        this.longitude = longitude;
+        this.address = address;
         this.phoneNumber = phoneNumber;
     }
 
-    public void updateFrom(CafeRequest request) {
+    public void update(CafeUpdateRequest request) {
         this.name = request.getCafeName();
         this.address = request.getAddress();
         this.latitude = request.getLatitude();

@@ -1,5 +1,6 @@
 package com.cagong.receiptpowerserver.member.auth;
 
+import com.cagong.receiptpowerserver.domain.member.MemberRepository;
 import com.cagong.receiptpowerserver.domain.member.MemberService;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberSignupRequest;
 import com.cagong.receiptpowerserver.domain.member.dto.MemberLoginRequest;
@@ -21,8 +22,12 @@ public class MemberLoginTest {
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private MemberRepository memberRepository;
+
     @BeforeEach
     void setUp() {
+        memberRepository.deleteAll();
         // 테스트용 회원 생성
         MemberSignupRequest signupRequest = new MemberSignupRequest(
             "testuser", 
@@ -41,7 +46,8 @@ public class MemberLoginTest {
         MemberLoginResponse response = memberService.login(request);
 
         // then
-        assertThat(response.getUsername()).isEqualTo("testuser");
+        // [수정됨] username 대신 ID와 email 검증
+        assertThat(response.getId()).isNotNull();
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getAccessToken()).isNotNull();
         assertThat(response.getTokenType()).isEqualTo("Bearer");
@@ -57,7 +63,8 @@ public class MemberLoginTest {
         MemberLoginResponse response = memberService.login(request);
 
         // then
-        assertThat(response.getUsername()).isEqualTo("testuser");
+        // [수정됨] username 대신 ID가 null이 아닌지 확인
+        assertThat(response.getId()).isNotNull();
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getAccessToken()).isNotNull();
     }

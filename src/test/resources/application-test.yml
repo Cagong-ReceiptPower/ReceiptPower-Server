@@ -1,4 +1,13 @@
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 'dummy-google-client-id'
+            client-secret: 'dummy-google-client-secret'
+            redirect-uri: 'http://localhost:8080/login/oauth2/code/google'
+
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
@@ -15,23 +24,14 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: "test-client-id"
-            client-secret: "test-client-secret"
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
-            scope:
-              - email
-              - profile
-            authorization-grant-type: authorization_code
-            client-name: Google
 
-
+# spring과 같은 레벨로 들여쓰기 없음
+kakao:
+  api:
+    key: 'dummy-kakao-api-key-for-testing' #테스트용
 jwt:
   secret: ThisIsA_VeryLongAndSecureSecretKeyForJwtTEST_YouShouldChange
+  expiration: 86400000
 
 mqtt:
   broker: ssl://75061fd0c9b94d79a3e6f99ea2f4055b.s1.eu.hivemq.cloud:8883

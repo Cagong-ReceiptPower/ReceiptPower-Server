@@ -61,7 +61,7 @@ public class OAuthService {
         // JWT 발급
         String token = jwtUtil.generateAccessToken(member.getId(), member.getUsername());
 
-        return new MemberLoginResponse(member, token);
+        return MemberLoginResponse.of(member, token);
     }
 
     private String generateUsername(String name) {

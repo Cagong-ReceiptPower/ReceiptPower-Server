@@ -2,7 +2,6 @@ package com.cagong.receiptpowerserver.global.jwt;
 
 import com.cagong.receiptpowerserver.domain.member.Member;
 import com.cagong.receiptpowerserver.domain.member.MemberRepository;
-import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
 import com.cagong.receiptpowerserver.global.security.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

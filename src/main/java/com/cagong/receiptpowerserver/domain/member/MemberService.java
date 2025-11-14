@@ -44,6 +44,7 @@ public class MemberService {
     //로그인
     @Transactional(readOnly = true)
     public MemberLoginResponse login(MemberLoginRequest request) {
+
         // 1. 사용자 찾기 (username 또는 email로)
         Member member = findMemberByUsernameOrEmail(request.getUsernameOrEmail());
         
@@ -53,9 +54,9 @@ public class MemberService {
         }
         
         // 3. JWT 토큰 생성
-        String accessToken = jwtUtil.generateAccessToken(member.getId(), member.getUsername());
+        String accessToken = jwtUtil.generateAccessToken(member.getId(), member.getId().toString());
         
-        return new MemberLoginResponse(member, accessToken);
+        return MemberLoginResponse.of(member, accessToken);
     }
 
     // 검증

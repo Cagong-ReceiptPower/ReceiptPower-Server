@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cagong Chat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <!-- [삭제] 카카오 지도 API 스크립트 삭제 -->
+    <!-- <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=..."></script> -->
+
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 600px; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .view { display: none; } /* 모든 뷰는 일단 숨김 */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        /* [수정] 너비 계산을 간단하게 변경 */
+        input[type="text"], input[type="password"], input[type="number"] { width: 95%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; border: none; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        button:disabled { background-color: #ccc; }
+        #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-bottom: 10px; background-color: #fafafa; border-radius: 4px; }
+        #chatroom-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px;}
+        #chatroom-list li { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        #chatroom-list li:hover { background-color: #f0f0f0; }
+        #chatroom-list li span { font-weight: bold; }
+        /* [삭제] 지도 스타일 삭제 */
+        /* #map { ... } */
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- 1. 로그인 뷰 -->
+    <div id="login-view" class="view" style="display: block;">
+        <h2>로그인</h2>
+        <div class="form-group"><input type="text" id="login-email" placeholder="이메일 또는 사용자명"></div>
+        <div class="form-group"><input type="password" id="login-password" placeholder="비밀번호"></div>
+        <button onclick="login()">로그인</button>
+        <button onclick="showView('signup-view')">회원가입</button>
+    </div>
+
+    <!-- 2. 회원가입 뷰 -->
+    <div id="signup-view" class="view">
+        <h2>회원가입</h2>
+        <div class="form-group">
+            <label for="signup-username">사용자명</label>
+            <input type="text" id="signup-username" placeholder="Username">
+        </div>
+        <div class="form-group">
+            <label for="signup-email">이메일</label>
+            <input type="text" id="signup-email" placeholder="Email">
+        </div>
+        <div class="form-group">
+            <label for="signup-password">비밀번호</label>
+            <input type="password" id="signup-password" placeholder="Password">
+        </div>
+        <button onclick="signup()">가입하기</button>
+        <button onclick="showView('login-view')">로그인으로 돌아가기</button>
+    </div>
+
+    <!-- [삭제] map-view 삭제 -->
+
+    <!-- 3. 채팅방 목록 뷰 (로그인 후 첫 화면) -->
+    <div id="chatroom-list-view" class="view">
+        <h2>전체 채팅방 목록</h2>
+        <p>참여할 채팅방을 선택하거나, 새 채팅방을 만들어보세요.</p>
+        <ul id="chatroom-list">
+            <!-- <li>채팅방이 없습니다.</li> -->
+        </ul>
+        <button onclick="showView('create-chatroom-view')" id="create-room-btn">새 채팅방 만들기</button>
+        <button onclick="logout()">로그아웃</button>
+    </div>
+
+    <!-- 4. 채팅방 생성 뷰 (카페 이름 제거) -->
+    <div id="create-chatroom-view" class="view">
+        <h3>새 채팅방 만들기</h3>
+        <p>채팅방 이름은 "스타벅스 강남점"처럼 다른 사용자가 찾기 쉽게 지어주세요.</p>
+        <div class="form-group"><input type="text" id="room-title" placeholder="채팅방 제목 (예: 스타벅스 강남점)"></div>
+        <div class="form-group">
+            <label for="room-max-participants">최대 인원 (2~100)</label>
+            <input type="number" id="room-max-participants" value="10" min="2" max="100" style="width: 60px; padding: 10px;">
+        </div>
+        <button onclick="createChatRoom()">만들기</button>
+        <button onclick="showView('chatroom-list-view')">취소</button>
+    </div>
+
+    <!-- 5. 채팅 뷰 -->
+    <div id="chat-view" class="view">
+        <h2 id="chat-room-title"></h2>
+        <div id="messages"></div>
+        <div class="form-group" style="display: flex;">
+            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." style="flex-grow: 1;">
+            <button onclick="sendMessage()" style="margin-left: 10px;">전송</button>
+        </div>
+        <button onclick="disconnect()">채팅방 나가기</button>
+    </div>
+
+</div>
+
+<script>
+    // 전역 변수
+    let jwtToken = null;
+    let stompClient = null;
+    let currentRoomId = null;
+    let myUsername = null; // [추가] 내 사용자명 저장
+
+    // 페이지 로드 시 로그인 뷰 표시
+    document.addEventListener('DOMContentLoaded', () => {
+        showView('login-view');
+    });
+
+    // 뷰 전환 헬퍼
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+        document.getElementById(viewId).style.display = 'block';
+    }
+
+    // 회원가입 뷰를 보여주는 함수 (이름 변경)
+    function showSignupView() {
+        showView('signup-view');
+    }
+
+    // 0. 회원가입 기능
+    async function signup() {
+        const username = document.getElementById('signup-username').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+
+        if (!username || !email || !password) {
+            alert('모든 항목을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/members/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || '회원가입에 실패했습니다. (아이디/이메일 중복 등)');
+            }
+
+            const data = await response.json();
+            alert(data.message || '회원가입 성공! 이제 로그인 해주세요.');
+            showView('login-view');
+
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    // 1. 로그인
+    async function login() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const response = await fetch('/members/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usernameOrEmail: email, password: password })
+            });
+
+            if (!response.ok) {
+                // 서버의 구체적인 에러 메시지를 표시
+                const errorData = await response.json().catch(() => ({ message: '로그인 실패. 서버 응답을 확인하세요.' }));
+                throw new Error(errorData.message || '로그인 실패. 아이디 또는 비밀번호를 확인하세요.');
+            }
+
+            const data = await response.json();
+            jwtToken = data.accessToken;
+            // [수정] 서버 응답에 username이 없다면, 일단 이메일(입력값)을 임시로 사용
+            myUsername = data.username || email;
+
+            alert('로그인 성공!');
+
+            // [수정] 지도 로드 대신 채팅방 목록 로드
+            loadAllChatRooms();
+            showView('chatroom-list-view');
+
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function logout() {
+        jwtToken = null;
+        myUsername = null;
+        if (stompClient) {
+            stompClient.disconnect();
+            stompClient = null;
+        }
+        alert('로그아웃 되었습니다.');
+        showView('login-view');
+    }
+
+    // 2. [수정] 지도 로드 함수 -> 전체 채팅방 로드 함수로 변경
+    async function loadAllChatRooms() {
+        if (!jwtToken) {
+            alert('로그인이 필요합니다.');
+            showView('login-view');
+            return;
+        }
+
+        try {
+            // [수정] 백엔드의 "모든 채팅방 조회" API 호출
+            const response = await fetch('/api/chatrooms', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`
+                }
+            });
+
+            if (!response.ok) {
+                if(response.status === 401 || response.status === 403) {
+                    throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+                }
+                throw new Error('채팅방 목록을 불러오는 데 실패했습니다.');
+            }
+
+            const chatRooms = await response.json();
+
+            const listElement = document.getElementById('chatroom-list');
+            listElement.innerHTML = ''; // 목록 초기화
+
+            if (chatRooms.length === 0) {
+                listElement.innerHTML = '<li>개설된 채팅방이 없습니다.</li>';
+            } else {
+                chatRooms.forEach(room => {
+                    const li = document.createElement('li');
+
+                    const titleSpan = document.createElement('span');
+                    titleSpan.innerText = room.title;
+
+                    const participantsSpan = document.createElement('span');
+                    // (TODO: 현재 참여 인원을 서버에서 보내주면 표시, 지금은 최대 인원만 표시)
+                    participantsSpan.innerText = `(최대 ${room.maxParticipants}명)`;
+                    participantsSpan.style.color = '#888';
+                    participantsSpan.style.marginLeft = '10px';
+
+                    li.appendChild(titleSpan);
+                    li.appendChild(participantsSpan);
+                    li.onclick = () => joinChatRoom(room.id, room.title);
+                    listElement.appendChild(li);
+                });
+            }
+        } catch (error) {
+            alert(error.message);
+            // 토큰 만료 등의 사유일 수 있으므로 로그인 뷰로 보냄
+            showView('login-view');
+        }
+    }
+
+    // [삭제] selectCafe, backToMap 함수 삭제
+
+    // 3. 채팅방 생성/목록 뷰 관련
+    function showCreateRoomForm() {
+        // [수정] 카페 이름 관련 DOM 조작 삭제
+        // document.getElementById('create-room-cafe-name').innerText = ...;
+        document.getElementById('room-title').value = ''; // 입력창 초기화
+        showView('create-chatroom-view');
+    }
+
+    // [수정] 함수 이름 변경 (기능은 동일)
+    function backToChatRoomList() {
+        loadAllChatRooms(); // 목록 새로고침
+        showView('chatroom-list-view');
+    }
+
+    async function createChatRoom() {
+        const title = document.getElementById('room-title').value;
+        const maxParticipants = document.getElementById('room-max-participants').value;
+
+        if (!title) {
+            alert('채팅방 제목을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/chatrooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                // [수정] cafeId 제거, maxParticipants 추가
+                body: JSON.stringify({
+                    title: title,
+                    maxParticipants: parseInt(maxParticipants, 10)
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || '채팅방 생성 실패');
+            }
+
+            const newRoom = await response.json();
+            alert(`'${newRoom.title}' 채팅방이 생성되었습니다!`);
+            joinChatRoom(newRoom.id, newRoom.title); // 생성 후 바로 참여
+
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    // 4. 채팅방 참여 (웹소켓)
+    function joinChatRoom(roomId, roomTitle) {
+        if (!jwtToken) { alert('로그인이 필요합니다.'); return; }
+
+        currentRoomId = roomId;
+        document.getElementById('messages').innerHTML = ''; // 이전 채팅 내용 삭제
+
+        const socket = new SockJS('/ws-stomp');
+        stompClient = Stomp.over(socket);
+
+        // JWT 토큰을 STOMP 헤더에 담아 전송 (StompHandler에서 인증)
+        const headers = { 'Authorization': `Bearer ${jwtToken}` };
+
+        stompClient.connect(headers, (frame) => {
+            console.log('Connected: ' + frame);
+            showView('chat-view');
+            document.getElementById('chat-room-title').innerText = roomTitle;
+
+            // 1. 이 방의 메시지를 구독
+            stompClient.subscribe(`/sub/chat/room/${roomId}`, (message) => {
+                showMessage(JSON.parse(message.body));
+            });
+
+            // 2. 서버에 입장 메시지(ENTER) 전송
+            stompClient.send("/pub/chat/message",
+                {},
+                JSON.stringify({ type: 'ENTER', roomId: roomId })
+            );
+
+        }, (error) => {
+            console.error("STOMP 연결 실패", error);
+            alert("채팅 서버 연결에 실패했습니다. 로그인을 다시 시도해주세요.\n" + error);
+            showView('login-view');
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            // 퇴장(QUIT) 메시지를 보낸 후 연결 종료
+            stompClient.send("/pub/chat/message",
+                {},
+                JSON.stringify({ type: 'QUIT', roomId: currentRoomId })
+            );
+
+            stompClient.disconnect(() => {
+                alert("채팅방에서 나왔습니다.");
+                loadAllChatRooms(); // 채팅방 목록 뷰 새로고침
+                showView('chatroom-list-view');
+            });
+        }
+        stompClient = null;
+        currentRoomId = null;
+    }
+
+    function sendMessage() {
+        const messageInput = document.getElementById('message-input');
+        const messageContent = messageInput.value.trim();
+
+        if (messageContent && stompClient) {
+            stompClient.send("/pub/chat/message",
+                {},
+                JSON.stringify({
+                    type: 'TALK',
+                    roomId: currentRoomId,
+                    message: messageContent
+                })
+            );
+            messageInput.value = '';
+        }
+    }
+
+    function showMessage(message) {
+        const messages = document.getElementById('messages');
+        const p = document.createElement('p');
+
+        let content = '';
+
+        // ENTER/QUIT 타입은 서버가 보낸 메시지를 그대로 씀
+        if (message.type === 'ENTER' || message.type === 'QUIT') {
+            p.style.textAlign = 'center';
+            p.style.color = '#888';
+            p.style.fontSize = '0.9em';
+            content = `--- ${message.message} ---`;
+        } else {
+            // TALK 타입
+            // [수정] myUsername 전역 변수와 비교
+            p.style.fontWeight = (message.sender === myUsername) ? 'bold' : 'normal';
+            p.style.color = (message.sender === myUsername) ? '#007bff' : '#333';
+            content = `[${message.sender}] ${message.message}`;
+        }
+
+        p.appendChild(document.createTextNode(content));
+        messages.appendChild(p);
+        messages.scrollTop = messages.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
