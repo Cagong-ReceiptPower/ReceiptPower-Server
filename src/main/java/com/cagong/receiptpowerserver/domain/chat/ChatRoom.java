@@ -52,9 +52,8 @@ public class ChatRoom {
     private LocalDateTime createdAt;
 
     @Builder
-    public ChatRoom(String title, Cafe cafe, Member creator, Integer maxParticipants) {
+    public ChatRoom(String title, Member creator, Integer maxParticipants) {
         this.title = title;
-        this.cafe = cafe; // location -> cafe
         this.creator = creator;
         this.maxParticipants = maxParticipants != null ? maxParticipants : 10;
     }

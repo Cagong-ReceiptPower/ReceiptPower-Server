@@ -2,8 +2,6 @@
 
 package com.cagong.receiptpowerserver.domain.chat;
 
-import com.cagong.receiptpowerserver.domain.cafe.Cafe;
-import com.cagong.receiptpowerserver.domain.cafe.CafeRepository;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import com.cagong.receiptpowerserver.domain.member.MemberRepository;
 import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomCreateRequest;
@@ -21,14 +19,11 @@ import java.util.List;
 public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
-    private final CafeRepository cafeRepository;
 
     @Transactional
     public ChatRoomResponse create(ChatRoomCreateRequest req, Long authenticatedUserId) {
         Member creator = memberRepository.findById(authenticatedUserId)
                 .orElseThrow(() -> new NotFoundException("creator not found: " + authenticatedUserId));
-        Cafe cafe = cafeRepository.findById(req.getCafeId())
-                .orElseThrow(() -> new NotFoundException("cafe not found: " + req.getCafeId()));
 
         String title = req.getTitle().trim();
         if (title.isEmpty()) {
@@ -38,7 +33,6 @@ public class ChatRoomService {
         ChatRoom chatRoom = ChatRoom.builder()
                 .title(title)
                 .creator(creator)
-                .cafe(cafe)
                 .maxParticipants(req.getMaxParticipants())
                 .build();
 
@@ -47,9 +41,9 @@ public class ChatRoomService {
         return toResponse(saved);
     }
 
-    // [추가] 특정 카페에 속한 채팅방 목록을 조회하는 서비스 메서드
-    public List<ChatRoomResponse> getRoomsByCafe(Long cafeId) {
-        return chatRoomRepository.findByCafeIdAndStatus(cafeId, ChatRoomStatus.ACTIVE)
+    // 모든 활성화된 채팅방 조회
+    public List<ChatRoomResponse> getAllActiveRooms() {
+        return chatRoomRepository.findByStatus(ChatRoomStatus.ACTIVE)
                 .stream().map(this::toResponse).toList();
     }
 

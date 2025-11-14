@@ -16,10 +16,6 @@ public class ChatRoomCreateRequest {
     @Size(max = 255)
     private String title;
 
-    // [추가] 카페 ID를 받도록 변경
-    @NotNull
-    private Long cafeId;
-
     @Min(2)
     @Max(100) // 정책에 맞춰 조정
     private Integer maxParticipants; // 옵션: null 이면 기본값(엔티티에서 10)

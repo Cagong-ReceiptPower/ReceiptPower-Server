@@ -12,14 +12,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/cafes") // <-- ❗️ 경로 수정
+@RequestMapping("/api/cafes")
 @RequiredArgsConstructor
 public class CafeController {
 
     private final CafeService cafeService;
-
-    // --- ❗️ [이하 4개 메서드 추가] ---
-
     /**
      * 1. 카페 생성 (POST /api/cafes)
      */
@@ -66,15 +63,5 @@ public class CafeController {
 
         // 수정된 정보(updatedCafe)를 클라이언트에게 200 OK와 함께 반환
         return ResponseEntity.ok(updatedCafe);
-    }
-
-    // [수정] kakaoPlaceId 대신 query(검색어)를 받도록 변경 (기존 코드)
-    @GetMapping("/details")
-    public ResponseEntity<CafeWithChatRoomsResponse> getCafeDetailsByQuery(
-            @RequestParam String query
-    ) {
-        // 서비스 메서드 이름도 변경
-        CafeWithChatRoomsResponse response = cafeService.findOrCreateCafeByQueryAndGetDetails(query);
-        return ResponseEntity.ok(response);
     }
 }

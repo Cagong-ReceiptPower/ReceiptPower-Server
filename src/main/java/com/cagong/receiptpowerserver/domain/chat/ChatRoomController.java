@@ -39,10 +39,10 @@ public class ChatRoomController {
         ).body(response);
     }
 
-    // [추가] 특정 카페의 모든 채팅방을 조회하는 API
-    @GetMapping("/cafes/{cafeId}")
-    public ResponseEntity<List<ChatRoomResponse>> getRoomsByCafe(@PathVariable Long cafeId) {
-        return ResponseEntity.ok(chatRoomService.getRoomsByCafe(cafeId));
+    // 모든 활성화된 채팅방 조회
+    @GetMapping
+    public ResponseEntity<List<ChatRoomResponse>> getAllActiveRooms() {
+        return ResponseEntity.ok(chatRoomService.getAllActiveRooms());
     }
 
     @GetMapping("/{id}")

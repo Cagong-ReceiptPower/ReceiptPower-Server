@@ -11,13 +11,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @SpringBootApplication
 public class ReceiptPowerServerApplication {
     public static void main(String[] args) {
-        // .env 파일 로드
-        Dotenv dotenv = Dotenv.configure().load();
-
-        // 환경 변수 설정
-        dotenv.entries().forEach(entry ->
-                System.setProperty(entry.getKey(), entry.getValue())
-        );
+        Dotenv.configure()
+                .ignoreIfMissing() // .env 파일이 없어도(예: 배포 환경) 오류 없이 통과
+                .systemProperties() // .env의 모든 변수를 System.setProperty()로 자동 등록
+                .load();
         SpringApplication.run(ReceiptPowerServerApplication.class, args);
     }
 }
