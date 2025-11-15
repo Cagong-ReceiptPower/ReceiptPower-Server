@@ -154,6 +154,4 @@ public class ChatRoomController {
 
         throw new org.springframework.security.authentication.BadCredentialsException("Cannot resolve user id from principal");
     }
-
-
 }
