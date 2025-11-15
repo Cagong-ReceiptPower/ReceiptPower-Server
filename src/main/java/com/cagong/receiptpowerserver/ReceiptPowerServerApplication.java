@@ -6,7 +6,9 @@ import io.github.cdimascio.dotenv.Dotenv; // import 추가
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableScheduling; // [!!] 추가
 
+@EnableScheduling
 @EnableJpaAuditing
 @SpringBootApplication
 public class ReceiptPowerServerApplication {
