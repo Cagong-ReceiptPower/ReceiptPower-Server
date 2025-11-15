@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +21,7 @@ import java.util.List;
 public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
 
     @Transactional
     public ChatRoomResponse create(ChatRoomCreateRequest req, Long authenticatedUserId) {
@@ -73,7 +76,121 @@ public class ChatRoomService {
         return toResponse(room);
     }
 
-    private ChatRoomResponse toResponse(ChatRoom saved) {
+    /**
+     * ✅ 1. 현재 참여 인원 조회 로직
+     * (ChatRoomController의 getChatRoomParticipants가 호출)
+     */
+    public List<?> getParticipants(Long roomId) {
+        if (!chatRoomRepository.existsById(roomId)) {
+            throw new NotFoundException("chat room not found: " + roomId);
+        }
+
+        // ChatParticipantRepository를 사용해 특정 방의 참여자 목록을 조회
+        return chatParticipantRepository.findByChatRoom_Id(roomId).stream()
+                .map(participant -> Map.of(
+                        "userId", participant.getMember().getId(),
+                        "username", participant.getMember().getUsername() // 또는 getName() 등
+                ))
+                .toList();
+    }
+
+    /**
+     * ✅ 2. 인원 4명 제한 로직 (채팅방 입장)
+     * (ChatRoomController의 enterChatRoom이 호출)
+     */
+    @Transactional
+    public Map<String, Object> enterRoom(Long roomId, Long authenticatedUserId) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new NotFoundException("chat room not found: " + roomId));
+
+        // 입장 전 상태 확인
+        if (room.getStatus() != ChatRoomStatus.ACTIVE) { //
+            throw new IllegalStateException("활성화된 채팅방이 아닙니다.");
+        }
+
+        // [!!] ✅ 2. 인원 제한 로직
+        // ChatRoom 엔티티의 maxParticipants 값을 기준으로 현재 인원을 비교
+        long currentParticipants = chatParticipantRepository.countByChatRoom_Id(roomId);
+        if (currentParticipants >= room.getMaxParticipants()) {
+            throw new IllegalStateException("채팅방 정원이 초과되었습니다.");
+        }
+
+        // 이미 참여 중인지 확인
+        if (chatParticipantRepository.existsByChatRoom_IdAndMember_Id(roomId, authenticatedUserId)) {
+            // 이미 참여중이어도 에러 대신 성공으로 간주하고 현재 인원수 반환
+            return Map.of("success", true, "currentParticipants", currentParticipants);
+        }
+
+        Member member = memberRepository.findById(authenticatedUserId)
+                .orElseThrow(() -> new NotFoundException("member not found: " + authenticatedUserId));
+
+        // 참여자 목록(ChatParticipant)에 저장
+        ChatParticipant participation = ChatParticipant.builder().chatRoom(room).member(member).build();
+        chatParticipantRepository.save(participation);
+
+        // 입장 성공 시, 현재 인원 + 1
+        return Map.of("success", true, "currentParticipants", currentParticipants + 1);
+    }
+
+    /**
+     * [보너스] 채팅방 나가기 로직
+     * (ChatRoomController의 leaveChatRoom이 호출)
+     */
+    @Transactional
+    public Map<String, Object> leaveRoom(Long roomId, Long authenticatedUserId) {
+        ChatParticipant participation = chatParticipantRepository.findByChatRoom_IdAndMember_Id(roomId, authenticatedUserId)
+                .orElse(null); // 참여 기록이 없으면 무시
+
+        if (participation != null) {
+            chatParticipantRepository.delete(participation);
+        }
+
+        long currentParticipants = chatParticipantRepository.countByChatRoom_Id(roomId);
+        return Map.of("success", true, "currentParticipants", currentParticipants);
+    }
+
+    /**
+     * ✅ 3. 채팅방 24시간 만료 처리 로직
+     * (ChatRoomScheduler가 이 메서드를 호출)
+     */
+    @Transactional
+    public void closeExpiredRooms() {
+        System.out.println("스케줄러 실행: 24시간 만료된 채팅방을 확인합니다...");
+
+        LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
+
+        // 24시간이 지났고, ACTIVE 상태인 방들을 조회 (Repository에 쿼리 메서드 추가 필요)
+        List<ChatRoom> expiredRooms = chatRoomRepository.findByStatusAndCreatedAtBefore(
+                ChatRoomStatus.ACTIVE, //
+                twentyFourHoursAgo
+        );
+
+        int count = 0;
+        for (ChatRoom room : expiredRooms) {
+            room.setStatus(ChatRoomStatus.CLOSED); //
+            count++;
+        }
+
+        if (count > 0) {
+            System.out.printf("%d개의 채팅방을 CLOSED로 변경했습니다.%n", count);
+        }
+    }
+
+    /**
+     * (옵션) 채팅 메시지 로그 조회
+     * (ChatRoomController의 getChatRoomMessages가 호출)
+     */
+    public List<?> getMessages(Long roomId) {
+        // [!!] ChatMessageRepository 구현이 필요합니다.
+        // List<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId);
+        // return messages.stream().map(DTO로 변환).toList();
+
+        // 임시 반환
+        return List.of(Map.of("message", "과거 메시지 1"), Map.of("message", "과거 메시지 2"));
+    }
+
+    // --- (이하 기존 toResponse 메서드) ---
+    private ChatRoomResponse toResponse(ChatRoom saved) { //
         return ChatRoomResponse.builder()
                 .id(saved.getId())
                 .title(saved.getTitle())

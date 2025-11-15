@@ -3,6 +3,7 @@ package com.cagong.receiptpowerserver.domain.chat;
 import com.cagong.receiptpowerserver.domain.member.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
@@ -12,4 +13,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
     // 생성자별 채팅방 조회
     List<ChatRoom> findByCreatorAndStatus(Member creator, ChatRoomStatus status);
+
+    List<ChatRoom> findByStatusAndCreatedAtBefore(ChatRoomStatus status, LocalDateTime dateTime);
 }
