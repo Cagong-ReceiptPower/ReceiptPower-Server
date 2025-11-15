@@ -145,3 +145,23 @@ async def predict_receipt(
         "label": cafe_name if is_my_cafe else "other_cafe",
         "threshold": threshold
     }
+
+# ----------------------------
+# 7️⃣ /list_profiles : 등록된 모든 cafe_name 반환
+# ----------------------------
+@app.get("/list_profiles")
+def list_profiles():
+    base_dir = Path(__file__).parent
+    profile_files = list(base_dir.glob("*_profile.json"))
+
+    cafe_names = []
+    for f in profile_files:
+        # 파일명에서 cafe_name만 추출
+        # 예: "starbucks_profile.json" → "starbucks"
+        name = f.stem.replace("_profile", "")
+        cafe_names.append(name)
+
+    return {
+        "count": len(cafe_names),
+        "profiles": cafe_names
+    }
