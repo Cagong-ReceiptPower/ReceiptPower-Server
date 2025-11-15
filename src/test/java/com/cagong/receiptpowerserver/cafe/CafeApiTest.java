@@ -97,7 +97,7 @@ public class CafeApiTest {
         given()
                 .header("Authorization", authorizationValue)
                 .when()
-                .get("/api/cafes/all") // ✅ CafeController 경로와 일치
+                .get("/cafes/all") // ✅ CafeController 경로와 일치
                 .then()
                 // ... (검증) ...
                 .statusCode(200)
@@ -120,7 +120,7 @@ public class CafeApiTest {
         given()
                 .header("Authorization", authorizationValue)
                 .when()
-                .get("/api/cafes/{cafeId}", cafeId) // ✅ CafeController 경로와 일치
+                .get("/cafes/{cafeId}", cafeId) // ✅ CafeController 경로와 일치
                 .then()
                 .statusCode(200);
     }
@@ -140,7 +140,7 @@ public class CafeApiTest {
                 .contentType(ContentType.JSON)
                 .body(request)
                 .when()
-                .post("/api/cafes") // ✅ CafeController 경로와 일치
+                .post("/cafes") // ✅ CafeController 경로와 일치
                 .then()
                 .statusCode(201);
     }
@@ -159,7 +159,7 @@ public class CafeApiTest {
         given()
                 .header("Authorization", authorizationValue)
                 .when()
-                .delete("/api/cafes/{cafeId}", cafeId) // ✅ CafeController 경로와 일치
+                .delete("/cafes/{cafeId}", cafeId) // ✅ CafeController 경로와 일치
                 .then()
                 .statusCode(204);
     }

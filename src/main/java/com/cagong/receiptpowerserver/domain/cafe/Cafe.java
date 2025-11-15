@@ -39,29 +39,11 @@ public class Cafe {
         this.phoneNumber = phoneNumber;
     }
 
-    public void updateFrom(CafeRequest request) {
+    public void update(CafeUpdateRequest request) {
         this.name = request.getCafeName();
         this.address = request.getAddress();
         this.latitude = request.getLatitude();
         this.longitude = request.getLongitude();
         this.phoneNumber = request.getPhoneNumber();
-    }
-
-    public void update(CafeUpdateRequest request) {
-        if (request.getCafeName() != null) {
-            this.name = request.getCafeName();
-        }
-        if (request.getAddress() != null) {
-            this.address = request.getAddress();
-        }
-        if (request.getLatitude() != null) {
-            this.latitude = request.getLatitude();
-        }
-        if (request.getLongitude() != null) {
-            this.longitude = request.getLongitude();
-        }
-        if (request.getPhoneNumber() != null) {
-            this.phoneNumber = request.getPhoneNumber();
-        }
     }
 }
