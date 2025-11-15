@@ -1,8 +1,6 @@
 package com.cagong.receiptpowerserver.domain.chat;
 
-import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomCreateRequest;
-import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomResponse;
-import com.cagong.receiptpowerserver.domain.chat.dto.ChatRoomStatusUpdateRequest;
+import com.cagong.receiptpowerserver.domain.chat.dto.*;
 import com.cagong.receiptpowerserver.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +72,7 @@ public class ChatRoomController {
      * ✅ 2. 채팅 메시지 저장 API (과거 기록 불러오기)
      */
     @GetMapping("/{roomId}/messages")
-    public ResponseEntity<List<?>> getChatRoomMessages(@PathVariable Long roomId) {
+    public ResponseEntity<List<ChatMessageResponse>> getChatRoomMessages(@PathVariable Long roomId) {
         // [!!] ChatMessageRepository/Service가 구현되어 있어야 합니다.
         return ResponseEntity.ok(chatRoomService.getMessages(roomId));
     }
@@ -83,16 +81,18 @@ public class ChatRoomController {
      * ✅ 3 & 4. 채팅방 입장 API (인원 제한 로직은 서비스 레이어)
      */
     @PostMapping("/{id}/enter")
-    public ResponseEntity<?> enterChatRoom(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<ChatParticipantCountResponse> enterChatRoom(@PathVariable Long id, Authentication authentication) {
         Long authenticatedUserId = extractUserId(authentication);
         try {
-            // [!!] ChatParticipantRepository/Service가 구현되어 있어야 합니다.
-            Map<String, Object> response = chatRoomService.enterRoom(id, authenticatedUserId);
+            ChatParticipantCountResponse response = chatRoomService.enterRoom(id, authenticatedUserId);
             return ResponseEntity.ok(response);
         } catch (IllegalStateException e) {
-            // ✅ 4. 인원 4명 제한 로직 (서비스단에서 예외 발생 시)
+            ApiErrorResponse errorResponse = ApiErrorResponse.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .build();
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("success", false, "message", e.getMessage()));
+                    .body(errorResponse); // Swagger가 403 응답을 문서화할 수 있음
         }
     }
 
@@ -100,10 +100,10 @@ public class ChatRoomController {
      * ✅ 3. 채팅방 나가기 API
      */
     @PostMapping("/{id}/leave")
-    public ResponseEntity<?> leaveChatRoom(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<ChatParticipantCountResponse> leaveChatRoom(@PathVariable Long id, Authentication authentication) {
         Long authenticatedUserId = extractUserId(authentication);
         // [!!] ChatParticipantRepository/Service가 구현되어 있어야 합니다.
-        Map<String, Object> response = chatRoomService.leaveRoom(id, authenticatedUserId);
+        ChatParticipantCountResponse response = chatRoomService.leaveRoom(id, authenticatedUserId);
         return ResponseEntity.ok(response);
     }
 
@@ -111,7 +111,7 @@ public class ChatRoomController {
      * ✅ 3. 현재 참여 중인 인원 가져오기
      */
     @GetMapping("/{id}/participants")
-    public ResponseEntity<List<?>> getChatRoomParticipants(@PathVariable Long id) {
+    public ResponseEntity<List<ChatParticipantResponse>> getChatRoomParticipants(@PathVariable Long id) {
         // [!!] ChatParticipantRepository/Service가 구현되어 있어야 합니다.
         return ResponseEntity.ok(chatRoomService.getParticipants(id));
     }
@@ -133,22 +133,16 @@ public class ChatRoomController {
             return customUserDetails.getMember().getId();
         }
 
-        // --- 이하 코드는 기존 코드의 안전 장치로 사용됩니다 ---
-
         if (principal instanceof UserDetails userDetails) {
             try {
                 return Long.parseLong(userDetails.getUsername());
-            } catch (NumberFormatException ignored) {
-                // fall through
-            }
+            } catch (NumberFormatException ignored) {}
         }
 
         if (principal instanceof String s) {
             try {
                 return Long.parseLong(s);
-            } catch (NumberFormatException ignored) {
-                // fall through
-            }
+            } catch (NumberFormatException ignored) {}
         }
 
         try {
@@ -156,9 +150,7 @@ public class ChatRoomController {
             Object id = getId.invoke(principal);
             if (id instanceof Long l) return l;
             if (id instanceof Number n) return n.longValue();
-        } catch (Exception ignored) {
-            // fall through
-        }
+        } catch (Exception ignored) {}
 
         throw new org.springframework.security.authentication.BadCredentialsException("Cannot resolve user id from principal");
     }
