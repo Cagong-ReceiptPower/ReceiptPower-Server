@@ -194,7 +194,7 @@ public class ChatRoomService {
         // List<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId);
         // return messages.stream().map(DTO로 변환).toList();
 
-        List<ChatMessage> messages = chatMessageRepository.findByChatRoom_IdOrderByCreatedAtAsc(roomId);
+        List<ChatMessage> messages = chatMessageRepository.findByChatRoomIdOrderByCreatedAtAsc(roomId);
 
         // [!!] 2. ChatMessage(엔티티) -> ChatMessageResponse(DTO)로 변환
         return messages.stream()
