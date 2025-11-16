@@ -21,6 +21,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
     private final ChatParticipantRepository chatParticipantRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
     @Transactional
     public ChatRoomResponse create(ChatRoomCreateRequest req, Long authenticatedUserId) {
@@ -193,17 +194,12 @@ public class ChatRoomService {
         // List<ChatMessage> messages = chatMessageRepository.findByChatRoomId(roomId);
         // return messages.stream().map(DTO로 변환).toList();
 
-        // 임시 반환
-        return List.of(
-                ChatMessageResponse.builder()
-                        .id(1L)
-                        .roomId(roomId)
-                        .senderId(4L)
-                        .senderName("홍길동")
-                        .message("어디 앉아계신가요?")
-                        .timestamp(LocalDateTime.parse("2025-11-14T09:31:00"))
-                        .build()
-        );
+        List<ChatMessage> messages = chatMessageRepository.findByChatRoom_IdOrderByCreatedAtAsc(roomId);
+
+        // [!!] 2. ChatMessage(엔티티) -> ChatMessageResponse(DTO)로 변환
+        return messages.stream()
+                .map(this::toChatMessageResponse) // 헬퍼 메서드 사용
+                .toList();
     }
 
     // --- (이하 기존 toResponse 메서드) ---
@@ -215,6 +211,25 @@ public class ChatRoomService {
                 .maxParticipants(saved.getMaxParticipants())
                 .status(saved.getStatus().name())
                 .createdAt(saved.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * ChatMessage 엔티티를 ChatMessageResponse DTO로 변환
+     */
+    private ChatMessageResponse toChatMessageResponse(ChatMessage entity) {
+        // [!!] sender가 null일 경우를 대비한 방어 코드 (e.g. 탈퇴한 유저)
+        Member sender = entity.getSender();
+        Long senderId = (sender != null) ? sender.getId() : null;
+        String senderName = (sender != null) ? sender.getUsername() : "알 수 없는 사용자";
+
+        return ChatMessageResponse.builder()
+                .id(entity.getId())
+                .roomId(entity.getChatRoom().getId())
+                .senderId(senderId)
+                .senderName(senderName)
+                .message(entity.getMessage())
+                .timestamp(entity.getCreatedAt())
                 .build();
     }
 }
