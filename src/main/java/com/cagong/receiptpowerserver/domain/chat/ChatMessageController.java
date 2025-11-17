@@ -1,142 +1,90 @@
-// chat/ChatMessageController.java
-
 package com.cagong.receiptpowerserver.domain.chat;
 
 import com.cagong.receiptpowerserver.domain.chat.dto.ChatMessageRequest;
-import com.cagong.receiptpowerserver.domain.member.Member;
-import com.cagong.receiptpowerserver.domain.member.MemberRepository;
-import com.cagong.receiptpowerserver.exception.NotFoundException;
+import com.cagong.receiptpowerserver.domain.chat.dto.ChatMessageResponse; // [!!] 응답 DTO 임포트
+// [!!] 리포지토리 의존성 모두 제거됨
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener; // [!!] 추가
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.socket.messaging.SessionDisconnectEvent; // [!!] 추가
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import java.util.Map; // [!!] 추가
-
+/**
+ * [리팩토링] WebSocket 메시지 중계(Routing) 역할만 담당하는 컨트롤러.
+ * 모든 비즈니스 로직은 ChatMessageService에 위임합니다.
+ */
 @Controller
 @RequiredArgsConstructor
 public class ChatMessageController {
 
     private final SimpMessageSendingOperations messagingTemplate;
-    private final ChatParticipantRepository chatParticipantRepository;
-    // 메시지 저장을 위해서 추가함.
-    private final ChatMessageRepository chatMessageRepository;
-    private final ChatRoomRepository chatRoomRepository;
-    private final MemberRepository memberRepository;
+    private final ChatMessageService chatMessageService; // [!!] 신규 서비스 주입
 
+    // [!!] 모든 Repository 의존성 제거됨
+
+    /**
+     * /pub/chat/message 경로로 오는 메시지 처리
+     */
     @MessageMapping("/chat/message")
     public void message(@Payload ChatMessageRequest message, StompHeaderAccessor headerAccessor) {
 
-        // [핵심] STOMP 세션 속성에서 StompHandler가 저장해 둔 사용자 이름을 직접 가져옵니다.
+        // 1. 세션에서 사용자 정보 가져오기 (인증 정보)
         String senderName = (String) headerAccessor.getSessionAttributes().get("username");
         Long senderId = (Long) headerAccessor.getSessionAttributes().get("userId");
-
-        // [!!] 수정: senderId가 null이어도 TALK 메시지 저장 시 오류가 나므로 함께 체크
-        if (senderName == null || senderId == null) {
-            // 비정상 접근으로 세션 정보가 없으면 메시지 처리를 중단합니다.
-            return;
-        }
-
-        message.setSender(senderName);
         Long roomId = message.getRoomId();
 
-        if (ChatMessageRequest.MessageType.ENTER.equals(message.getType())) {
-            message.setMessage(senderName + "님이 입장하셨습니다.");
-            // [!!] 비정상 종료(disconnect) 시 roomId를 참조하기 위해 세션에 저장
-            headerAccessor.getSessionAttributes().put("roomId", roomId);
+        if (senderName == null || senderId == null) {
+            return; // 비정상 접근 차단
+        }
+        message.setSender(senderName); // (ENTER, QUIT 메시지용)
 
-        } else if (ChatMessageRequest.MessageType.QUIT.equals(message.getType())) {
-            message.setMessage(senderName + "님이 퇴장하셨습니다.");
+        // 2. TALK 메시지인 경우, 서비스에 저장을 위임
+        if (ChatMessageRequest.MessageType.TALK.equals(message.getType())) {
 
-        } else if (ChatMessageRequest.MessageType.TALK.equals(message.getType())) {
+            // 서비스 호출: DB에 메시지 저장 후, 브로드캐스팅용 DTO 반환
+            ChatMessageResponse responseDto = chatMessageService.saveMessage(message, senderId, senderName);
 
-            // [!!] --- ✅ 메시지 저장 로직 ---
-            // 1. 채팅방 엔티티 조회
-            ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-                    .orElseThrow(() -> new NotFoundException("Chat room not found: " + roomId));
-            // 2. 보낸사람 엔티티 조회
-            Member sender = memberRepository.findById(senderId)
-                    .orElseThrow(() -> new NotFoundException("Member not found: " + senderId));
+            // 클라이언트가 일관된 응답(ChatMessageResponse)을 받도록 DTO로 브로드캐스팅
+            messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, responseDto);
 
-            // 3. 메시지 엔티티 생성
-            ChatMessage chatMessage = ChatMessage.builder()
-                    .chatRoom(chatRoom)
-                    .sender(sender)
-                    .message(message.getMessage())
-                    .build();
+        } else {
+            // 3. ENTER, QUIT 메시지는 DB 저장 없이 브로드캐스팅
+            // (기존 ChatMessageRequest 포맷 그대로 전송)
+            if (ChatMessageRequest.MessageType.ENTER.equals(message.getType())) {
+                message.setMessage(senderName + "님이 입장하셨습니다.");
+                // 비정상 종료 처리를 위해 세션에 roomId 저장
+                headerAccessor.getSessionAttributes().put("roomId", roomId);
+            } else if (ChatMessageRequest.MessageType.QUIT.equals(message.getType())) {
+                message.setMessage(senderName + "님이 퇴장하셨습니다.");
+            }
 
-            // 4. DB에 저장 (INSERT)
-            chatMessageRepository.save(chatMessage);
-            // --- 메시지 저장 로직 끝 ---
+            messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, message);
         }
 
-        // [!!] 수정: 메시지 1회 전송
-        // 1. 기존 채팅 메시지(ENTER, TALK, QUIT) 전송
-        messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, message);
-
-        // 2. 참여자 수 변동 이벤트 전송 (ENTER, QUIT 일 때만)
+        // 4. 참여자 수 업데이트 이벤트 전송 (ENTER, QUIT 일 때만)
         if (ChatMessageRequest.MessageType.ENTER.equals(message.getType()) ||
                 ChatMessageRequest.MessageType.QUIT.equals(message.getType())) {
 
-            // [!!] 헬퍼 메서드 호출
-            sendParticipantUpdate(roomId);
+            // 서비스의 헬퍼 메서드 호출
+            chatMessageService.broadcastParticipantUpdate(roomId);
         }
-
-        // [!!] 수정: 중복 전송 코드 삭제
-        // messagingTemplate.convertAndSend("/sub/chat/room/" + message.getRoomId(), message);
     }
 
     /**
-     * [!!] 신규 추가 (✅ 6번: 비정상 종료 처리)
-     * WebSocket 연결이 비정상적으로 종료되었을 때 (예: 앱 종료, 네트워크 끊김)
-     * QUIT 메시지를 서버가 직접 발생시켜 다른 참여자들에게 알립니다.
+     * 비정상 종료(Disconnect) 이벤트 처리
+     * (로직을 ChatMessageService에 위임)
      */
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        // 세션에서 ENTER 시 저장해둔 사용자 이름과 방 ID를 가져옵니다.
         String username = (String) headerAccessor.getSessionAttributes().get("username");
         Long roomId = (Long) headerAccessor.getSessionAttributes().get("roomId");
 
-        if (username != null && roomId != null) {
-            // 1. QUIT 메시지 생성
-            ChatMessageRequest quitMessage = new ChatMessageRequest();
-            quitMessage.setType(ChatMessageRequest.MessageType.QUIT);
-            quitMessage.setSender(username);
-            quitMessage.setRoomId(roomId);
-            quitMessage.setMessage(username + "님이 퇴장하셨습니다.");
-
-            // 2. 해당 채팅방에 퇴장 메시지 브로드캐스팅
-            messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, quitMessage);
-
-            // 3. 비정상 종료 시에도 인원수 업데이트 이벤트 전송
-            sendParticipantUpdate(roomId);
-        }
-    }
-
-    /**
-     * [!!] 신규 추가 (✅ 6번: 참여자 수 업데이트 이벤트)
-     * 현재 인원수를 계산하여 PARTICIPANT_UPDATE 이벤트를 전송하는 헬퍼 메서드
-     */
-    private void sendParticipantUpdate(Long roomId) {
-        if (roomId == null) return;
-
-        // ChatParticipantRepository를 사용해 현재 인원수를 DB에서 조회
-        long currentParticipants = chatParticipantRepository.countByChatRoom_Id(roomId);
-
-        // 요청하신 JSON 규격대로 Map을 생성하여 전송
-        Map<String, Object> updateEvent = Map.of(
-                "type", "PARTICIPANT_UPDATE",
-                "roomId", roomId,
-                "currentParticipants", currentParticipants
-        );
-
-        // /sub/chat/room/{roomId} 주소로 인원수 업데이트 이벤트 전송
-        messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, updateEvent);
+        // 서비스 메서드 호출
+        chatMessageService.handleDisconnect(username, roomId);
     }
 }
