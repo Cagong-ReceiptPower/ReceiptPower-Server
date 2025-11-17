@@ -1,5 +1,3 @@
-// global/config/WebSocketConfig.java
-
 package com.cagong.receiptpowerserver.global.config;
 
 import com.cagong.receiptpowerserver.global.jwt.StompHandler;
@@ -12,7 +10,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-// @RequiredArgsConstructor를 제거합니다.
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompHandler stompHandler;
@@ -24,7 +21,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws-stomp").setAllowedOriginPatterns("*").withSockJS();
+        // [!!] 수정된 부분: .withSockJS()를 완전히 제거했습니다.
+        // stomp_dart_client는 순수 WebSocket을 사용하므로 SockJS 호환 모드가 필요 없습니다.
+        registry.addEndpoint("/ws-stomp")
+                .setAllowedOriginPatterns("*");
     }
 
     @Override
